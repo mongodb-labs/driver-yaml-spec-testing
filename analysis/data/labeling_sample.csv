@@ -1,0 +1,1019 @@
+n,key,url,model_category,model_spec_areas,model_confidence,model_rationale,your_label,notes,summary,description,issuetype,components,labels,links
+1,CSHARP-4084,https://jira.mongodb.org/browse/CSHARP-4084,cross_driver_inconsistency,,low,mentions other driver,test_infrastructure,,Update initial DNS seedlist discovery tests to support dedicated load balancer port,"This ticket was split from {{DRIVERS-2224}}, please see that ticket for a detailed description. ",Bug,,,Issue split:DRIVERS-2224
+2,SCALA-444,https://jira.mongodb.org/browse/SCALA-444,not_relevant,,low,Insufficient detail to classify,test_infrastructure,,Resync read write concern tests to add new read concern levels,See DRIVERS-567 for details.,Improvement,,,Depends:SPEC-1152|Depends:DRIVERS-567
+3,NODE-5514,https://jira.mongodb.org/browse/NODE-5514,not_relevant,,medium,Insufficient signal,not_relevant,,refactor FLE internals to use async-await,"h3. Use Case
+As a driver engineer,
+I want our FLE logic to use async-await,
+So that it is easier to debug, it is easier to maintain and we can ensure we catch errors thrown.
+
+h3. User Impact
+n/a - should be internal refactor.
+
+h3. Dependencies
+n/a
+
+h3. Unknowns
+n/a
+
+h3. Acceptance Criteria
+
+h4. Implementation Requirements
+ - Remove callbacks from `MongocryptdManager`, `StateMachine` and `AutoEncrypter` and refactor the methods to be async-await.
+ -- Adjust any places in the driver that consume these APIs.
+ - Make `Encrypter.close` async.
+ - Update all tests in FLE and the driver to use async/await or promises where they were using callbacks.
+ - Update the StateMachine's parsing of TLS options to be async
+ -- [https://github.com/mongodb/node-mongodb-native/blob/71c593685735a08d5d7503120464a7c23ba20a46/src/client-side-encryption/stateMachine.js#L386]
+ - Remove `common.js` now that maybePromise and promiseOrCallback are unused
+
+h4. Testing Requirements
+* Our unit tests for MongocryptdManager, StateMachine and AutoEncrypter mock the internal APIs we are modifying.  We'll need to update the unit tests to stub async functions instead of stubbing callback functions.
+
+h4. Documentation Requirements
+* n/a
+
+h4. Follow Up Requirements
+* n/a",Improvement,,node-internal,
+4,JAVA-4646,https://jira.mongodb.org/browse/JAVA-4646,not_relevant,,high,"Virtual thread interrupt handling, internal concern.",spec_ambiguity_or_gap,,Deal with consequence of interrupted socket operation throwing SocketException,"When a socket operation is interrupted (say by a call to {{StructuredTaskScope#joinUntil}} that times out, tests show that {{SocketInputStream#read}} throws a {{SocketException}} with the message {{""Closed by interrupt""}} .  The driver will treat that exception according to the rules defined by the SDAM and CMAP specifications, as a network error.  But it should be treated more like {{InterruptedException}}.",Improvement,Internal,loom,
+5,NODE-1890,https://jira.mongodb.org/browse/NODE-1890,driver_spec_nonconformance,,low,"Improvement ticket, unclear spec impact.",test_infrastructure,,Do not run sharding transaction tests for mongodb < 4.1.5,"Currently the transactions tests will attempt to run against a 4.0.x {{mongos}}, which causes the sharded tests to fail across the board.",Improvement,Native,,
+6,MGO-19,https://jira.mongodb.org/browse/MGO-19,driver_spec_nonconformance,crud,medium,Bug in spec area: crud.,driver_spec_nonconformance,,Change nUpdated to nMatched in bulk api results,,Improvement,,,Related:DRIVERS-140
+7,GODRIVER-3481,https://jira.mongodb.org/browse/GODRIVER-3481,not_relevant,,low,insufficient signal,test_infrastructure,,Improve JSON tests for Binary Vector Subtype,"This ticket was split from {{DRIVERS-3097}}, please see that ticket for a detailed description. ",Improvement,BSON,,Issue split:DRIVERS-3097
+8,CDRIVER-1082,https://jira.mongodb.org/browse/CDRIVER-1082,avoidable_by_spec_conformance,crud,high,Bulk operation splitting ignores write command overhead; BSON size limit.,driver_spec_nonconformance,,Proper bulk operation splitting at the margin,"The driver sends a write command to the server if the ""documents"", ""updates"", or ""deletes"" array alone is at most 16MB plus 16K; it should also take into account the additional overhead of the write command (writeConcern, readPreference, etc.) and split the batch if the total command document exceeds 16MB plus 16K.",Bug,,,Related:CS-27707
+9,JAVA-4523,https://jira.mongodb.org/browse/JAVA-4523,avoidable_by_spec_conformance,,high,Buffer leak with compression; resource management bug.,not_relevant,,Buffer is leaked from buffer pool on socket exception,"In {{SocketStream#read}}, the {{ByteBuf}} is not released if an exception is thrown.  As a result the buffer will be GC'd but will not be returned to the buffer pool.  This is a performance issue, but also a correctness issue, as it will result in a permit never being released.  Eventually, an application could run out of permits (although currently there are {{Integer#MAX_VALUE}} permits available so it's unlikely.",Bug,Internal,,
+10,CSHARP-2219,https://jira.mongodb.org/browse/CSHARP-2219,not_relevant,,medium,matches ci keyword,driver_spec_nonconformance,,ClusterClockAdvancingCoreSession should return the greater of the two ClusterTimes,"As part of gossiping the cluster time the driver appends a {{*$clusterTime*}} element to the command sent to the server.
+
+The code in {{*CommandUsingCommandMessageWireProtocol*}} looks like this:
+
+{code}
+var clusterTimeElement = new BsonElement(""$clusterTime"", _session.ClusterTime);
+extraElements.Add(clusterTimeElement);
+{code}
+
+The driver is supposed to send the greater of the session's {{*ClusterTime*}} and the cluster's {{*ClusterTime*}}. The line of code as written above assumes that the {{*_session*}} value is an instance of {{*ClusterClockAdvancingClusterTime*}} and that {{*ClusterClockAdvancingClusterTime*}} will be the one to compare the two {{*ClusterTimes*}} and return the greater of the two.
+
+The current implementation of {{*ClusterClockAdvancingClusterTime*}} neglected to do that.
+
+{{*ClusterClockAdvancingClusterTime*}} needs to override the {{*ClusterTime*}} property to return the greater of the two {{*ClusterTimes*}}.
+
+",Bug,Connectivity,,
+11,RUBY-2854,https://jira.mongodb.org/browse/RUBY-2854,driver_spec_nonconformance,sessions,medium,Session from find not passed to count_documents; inconsistent with session handling spec.,spec_ambiguity_or_gap,,Consider passing find (collection view) session to count_documents,"Original report:
+
+ when you do:
+
+{{collection.find({}, session: x).count_documents}}
+
+it doesn't use the {{session}} that is stored in the {{options}} of the {{View}} that {{find}} returns
+
+ 
+
+Sorry if I didn't specify clearly enough. In an attempt to clarify more, I monkeypatched the method like so:
+
+opts = opts.select\{ |k, _| [:hint, :max_time_ms, :read, :collation, :session].include?(k) }
+opts[:collation] ||= collation
+opts[:session] ||= options[:session]
+
+This then allows you to override the {{session}} when calling count_documents but by default it will use the one already specified on the {{View}}
+
+ ----------------------
+
+
+There is precedent for some find options not being applicable to subsequent methods, for example limit given to find does not apply to updates (which could update either a single document or all matching documents, but not an arbitrary number of them).
+
+As part of this ticket at least all of the view methods should be reviewed for behaving consistently with respect to either using or not using the session option given to find.
+
+Additionally, reference documentation needs to be reviewed and likely updated to state that find session will carry over to other operations.",Improvement,,,Cloners:RUBY-2843|Related:RUBY-2706
+12,PHPC-756,https://jira.mongodb.org/browse/PHPC-756,cross_driver_inconsistency,bson,medium,mentions or links to another driver,not_relevant,,fromJSON() should not evaluate bson_error_t.message as boolean,"In {{bson.c}}, {{fromJson}} calls {{phongo_throw_exception}} with either a custom error message, or a generic ""Error parsing JSON"" message.
+
+To determine whether or not to use a custom error message (bubbled up from mongoc) it checks whether a {{bson_error_t}}'s {{message}} field is NULL. Since the {{message}} field is just an array, it is never NULL. This produces a warning on some compilers.
+
+To check if the {{bson_error_t}} has an error message, {{error.code}} or {{error.domain}} should be checked instead.",Bug,,,Related:HHVM-273
+13,MOTOR-154,https://jira.mongodb.org/browse/MOTOR-154,cross_driver_inconsistency,collation,medium,Bug in collation component if found.,not_relevant,,"AgnosticCursor fails with ""collation"" method","Hi,
+In my app I'm using motor+tornado. I've tried to execute query with collation()
+
+{code:python}
+db[""test_collection""].find({}).sort(""field"").collation(Collation(""pl"")).to_list(length=1)
+{code}
+
+Unfortunately, `core.AgnosticCursor` has `collation` defined as `ReadOnlyProperty()` not `MotorCursorChainingMethod()` and the code fails with error
+
+{code}
+AttributeError: 'Cursor' object has no attribute 'to_list'
+{code}
+
+",Bug,,,
+14,CSHARP-3200,https://jira.mongodb.org/browse/CSHARP-3200,driver_spec_nonconformance,,medium,Spec nonconformance in crud.,not_relevant,,Release on Evergreen,"
+    See DRIVERS-1383 for updated details.
+    ",Improvement,Build,,Depends:DRIVERS-1383|Depends:CSHARP-3471|Related:CSHARP-2933|Related:CSHARP-4154
+15,NODE-1761,https://jira.mongodb.org/browse/NODE-1761,avoidable_by_spec_conformance,cmap,high,Mongos topology leaks pools on reconnect; CMAP cleanup issue.,avoidable_by_spec_conformance,,Mongos topology leaks memory on server reconnect,"From the ticket:
+
+{quote}
+
+I have been battling some weird memory leaks in our apps, and have found out that the culprit seems to be the mongodb driver which doesn't handle the Pool teardown properly when running against Mongos proxies (and maybe Replicasets as well).
+
+This is very easily reproducible by just connecting to a set of mongos proxies (2 in my case). At app start, a heapdump shows that there are two Pool instances when everything works. If I shut down network on the machine running the driver, after 30 seconds it will start eating memory like crazy and have thousands of Pool instances in the heap. This will go on indefinitely while you have a network outage, and even when you regain network connectivity, all of these instances remains and the app uses several hundred MB of RAM.
+
+This was the snippet I used for testing:
+
+ 
+
+{{// Simplest mongoDB connection app
+const MongoClient = require('mongodb').MongoClient;
+
+function heapDump() \{
+    const mem = process.memoryUsage();
+    console.log('%s, Memory usage: %f', new Date().toISOString(), mem.rss);
+}
+
+async function start() \{
+
+	const client = await MongoClient.connect('mongodb://user:password@mongos1,mongos2/admin', {
+		useNewUrlParser: true,
+		ssl: true,
+		haInterval: 10,
+		bufferMaxEntries: 0,
+	});
+	const db = client.db(); 
+}
+
+start()
+ .catch(err => console.error(err));
+setInterval(heapDump, 1000);}}
+
+The haInterval speeds things up, by default it increases with 2 Pools every 5 seconds, with this config it increases every 10 ms, making it more evident. The leak is still there.
+
+Not sure why it takes 30 second for the pool increase to start, but I'm guessing that is the heartbeat timeout against the servers or something.
+
+This was tested against mongodb@3.1.9, meaning mongodb-core@3.1.8, but I think it affect all 3.x versions (I've verified it in mongodb@3.1.4/mongo-core@3.1.3)
+
+{quote}",Bug,Core,,
+16,GODRIVER-743,https://jira.mongodb.org/browse/GODRIVER-743,driver_spec_nonconformance,crud,high,UpdateOne/UpdateMany silently erase fields with empty update; violates CRUD update validation spec.,driver_spec_nonconformance,,UpdateOne and UpdateMany should return error when update parameter is of zero length,"The UpdateOne and UpdateMany methods do not ensure that the update parameter has at least one modifier. Update the {{ensureDollarKey}} method to return an error if there are no modifiers provided.
+
+(original description below)
+----
+mongo.UpdateOne() erases all fields from a document matched by a filter when update interface is bson.D{} with zero length. That behavior is unwanted in my opinion (i've lost some data). Mongo shell acts differently (just returns an error 'the update operation document must contain at least one atomic operator'). I didn't check Update() and UpdateMany() but these ones may act the same as UpdateOne().",Bug,CRUD,,
+17,JAVA-4391,https://jira.mongodb.org/browse/JAVA-4391,driver_spec_nonconformance,auth,medium,GSSAPI authentication context name compatibility.,not_relevant,,"Accept ""com.sun.security.jgss.initiate"" as a default login context name for GSSAPI","In the 4.2 release, we introduced a new feature for caching Kerberos tickets: JAVA-3836. One of the consequences of that work is that the driver now by default always creates the Subject instance itself instead of relying on the JDK to do so. The LoginContext is now configured [here|https://github.com/mongodb/mongo-java-driver/blob/r4.3.4/driver-core/src/main/com/mongodb/KerberosSubjectProvider.java#L62]. Note that the default is to use ""com.sun.security.jgss.krb5.initiate"" as the default login context name. In contrast, the JDK looks for both ""com.sun.security.jgss.krb5.initiate"" _and_ ""com.sun.security.jgss.initiate"" (for reasons I'm not sure of). You can find that code [here|https://github.com/openjdk/jdk/blob/jdk-17+35/src/java.security.jgss/share/classes/sun/security/jgss/LoginConfigImpl.java#L103-L107].
+
+We should change the driver to also accept both login names.
+",Improvement,Security,,Documented:DOCSP-19773|Related:JAVA-3836|Related:JAVA-4389
+18,RUBY-2492,https://jira.mongodb.org/browse/RUBY-2492,cross_driver_inconsistency,sdam,high,Links to DRIVERS-1251; SDAM 500ms heartbeat delay spec test.,test_infrastructure,,Test that clients wait 500ms between failed isMaster checks ,"    See DRIVERS-1251 for updated details.
+    ",Improvement,Spec Comp|Tests,,Issue split:DRIVERS-1251
+19,CSHARP-4031,https://jira.mongodb.org/browse/CSHARP-4031,cross_driver_inconsistency,,low,mentions other driver,test_infrastructure,,Update load balancer tests to support dedicated load balancer port,"This ticket was split from {{DRIVERS-1983}}, please see that ticket for a detailed description. ",Improvement,,size-xsmall,Issue split:DRIVERS-1983
+20,CSHARP-1529,https://jira.mongodb.org/browse/CSHARP-1529,avoidable_by_spec_conformance,crud,low,"spec area bug, prevention unclear",not_relevant,,MongoCollectionSettings.AssignIdOnInsert has no effect,"According to the MongoDB documentation: ""if the mongod receives a document to insert that does not contain an _id field, mongod will add the _id field that holds an ObjectId."" Currently it is not possible to use this feautre of the mongod server, because the above mentioning option is not considered by the driver and ObjectId is always generated on collection insert. 
+
+Note: Legacy versions of the driver still support this feature. ",Bug,Operations,,
+21,PHPC-2188,https://jira.mongodb.org/browse/PHPC-2188,driver_spec_nonconformance,csfle|auth,medium,Permit tlsDisableOCSPEndpointCheck in KMS TLS options; DRIVERS-2507,not_relevant,,Permit tlsDisableOCSPEndpointCheck in KMS TLS options,"This ticket was split from {{DRIVERS-2507}}, please see that ticket for a detailed description. ",Improvement,,,Issue split:DRIVERS-2507|Related:CDRIVER-4528
+22,JAVA-4339,https://jira.mongodb.org/browse/JAVA-4339,driver_spec_nonconformance,,medium,touches spec area,not_relevant,,Evergreen: UnifiedCrudTest failures on latest,"{code}
+com.mongodb.reactivestreams.client.unified.UnifiedCrudTest > shouldPassAllOutcomes[aggregate-out-readConcern: readConcern available with out stage] FAILED
+[2021/10/08 20:45:46.616]     java.lang.AssertionError: The operation expects no error but an exception occurred
+[2021/10/08 20:45:46.616]     Assertion Context:
+[2021/10/08 20:45:46.616]     Completed Operation Context:
+[2021/10/08 20:45:46.616]        Operation:
+[2021/10/08 20:45:46.616]     {
+[2021/10/08 20:45:46.616]       ""object"": ""collection_readConcern_available"",
+[2021/10/08 20:45:46.616]       ""name"": ""aggregate"",
+[2021/10/08 20:45:46.616]       ""arguments"": {
+[2021/10/08 20:45:46.616]         ""pipeline"": [
+[2021/10/08 20:45:46.616]           {
+[2021/10/08 20:45:46.616]             ""$sort"": {
+[2021/10/08 20:45:46.616]               ""x"": 1
+[2021/10/08 20:45:46.616]             }
+[2021/10/08 20:45:46.616]           },
+[2021/10/08 20:45:46.616]           {
+[2021/10/08 20:45:46.616]             ""$match"": {
+[2021/10/08 20:45:46.616]               ""_id"": {
+[2021/10/08 20:45:46.616]                 ""$gt"": 1
+[2021/10/08 20:45:46.616]               }
+[2021/10/08 20:45:46.616]             }
+[2021/10/08 20:45:46.616]           },
+[2021/10/08 20:45:46.616]           {
+[2021/10/08 20:45:46.616]             ""$out"": ""other_test_collection""
+[2021/10/08 20:45:46.616]           }
+[2021/10/08 20:45:46.616]         ]
+[2021/10/08 20:45:46.616]       }
+[2021/10/08 20:45:46.616]     }
+[2021/10/08 20:45:46.616]        Actual result:
+[2021/10/08 20:45:46.616]     com.mongodb.MongoCommandException: Command failed with error 20 (IllegalOperation): 'PlanExecutor error during aggregation :: caused by :: failed while running command { internalRenameIfOptionsAndIndexesMatch: 1, from: ""crud-v2.tmp.agg_out.f356e94e-d6e1-48e0-9f16-9c6f6498368b"", to: ""crud-v2.other_test_collection"", collectionOptions: {}, indexes: [ { v: 2, key: { _id: 1 }, name: ""_id_"" } ], writeConcern: { w: ""majority"", wtimeout: 0, provenance: ""implicitDefault"" } } :: caused by :: Request sent without attaching database version' on server localhost:27017. The full response is {""ok"": 0.0, ""errmsg"": ""PlanExecutor error during aggregation :: caused by :: failed while running command { internalRenameIfOptionsAndIndexesMatch: 1, from: \""crud-v2.tmp.agg_out.f356e94e-d6e1-48e0-9f16-9c6f6498368b\"", to: \""crud-v2.other_test_collection\"", collectionOptions: {}, indexes: [ { v: 2, key: { _id: 1 }, name: \""_id_\"" } ], writeConcern: { w: \""majority\"", wtimeout: 0, provenance: \""implicitDefault\"" } } :: caused by :: Request sent without attaching database version"", ""code"": 20, ""codeName"": ""IllegalOperation"", ""$clusterTime"": {""clusterTime"": {""$timestamp"": {""t"": 1633725946, ""i"": 50}}, ""signature"": {""hash"": {""$binary"": {""base64"": ""XT5iQ3hoRX26inTWrEKaZBv66d4="", ""subType"": ""00""}}, ""keyId"": 7016795329693483017}}, ""operationTime"": {""$timestamp"": {""t"": 1633725946, ""i"": 49}}}
+[2021/10/08 20:45:46.616]        Operation index: 0
+{code}",Bug,Test Failure,build-baron,Depends:SERVER-59924
+23,CXX-1540,https://jira.mongodb.org/browse/CXX-1540,not_relevant,,high,CMake GNUInstallDirs for installation paths; build infrastructure change.,not_relevant,,Use CMake GNUInstallDirs to name installation paths,Per discussion here: https://github.com/mongodb/mongo-cxx-driver/pull/612#issuecomment-376990336,Improvement,Build,,Related:CDRIVER-2580
+24,JAVA-3625,https://jira.mongodb.org/browse/JAVA-3625,driver_spec_nonconformance,,low,mentions spec or yaml in description,test_infrastructure,,Update disabled change stream tests ,Change stream tests were disabled in JAVA-3624 because of failures in the latest server variant. SPEC-1505 will determine if these tests should be re-enabled or removed.,Improvement,Test Coverage,,Gantt End to Start:SPEC-1505
+25,CDRIVER-2017,https://jira.mongodb.org/browse/CDRIVER-2017,avoidable_by_spec_conformance,,medium,"Possible spec-related bug, needs deeper analysis",not_relevant,,"Inconsistent error reporting for insert, update, and replace BSON validation","The functions that append a write statement to the bulk (e.g. [{{mongoc_bulk_operation_insert()}}|https://github.com/mongodb/mongo-c-driver/blob/1.6.0/src/mongoc/mongoc-bulk-operation.c#L297], [{{mongoc_bulk_operation_replace_one()}}|https://github.com/mongodb/mongo-c-driver/blob/1.6.0/src/mongoc/mongoc-bulk-operation.c#L373]) inconsistently handle error reporting.
+
+If we look at [{{mongoc_bulk_operation_insert()}}|https://github.com/mongodb/mongo-c-driver/blob/1.6.0/src/mongoc/mongoc-bulk-operation.c#L297], {{_mongoc_validate_new_document()}} is only called if a document is being appended to a newly initialized insert command, and even then the validation function's boolean return value is ignored and a potentially invalid document is still added to the command. Validation is never performed at all before appending to an existing insert command (i.e. {{_mongoc_write_command_insert_append()}}).
+
+[{{mongoc_bulk_operation_replace_one()}}|https://github.com/mongodb/mongo-c-driver/blob/1.6.0/src/mongoc/mongoc-bulk-operation.c#L373] delegates to {{_mongoc_bulk_operation_replace_one_with_opts()}}, which starts with the following logic: 
+
+{code}
+if (bulk->result.error.domain) {
+   /* already failed e.g. a bad call to mongoc_bulk_operation_insert */
+   RETURN (true);
+}
+{code}
+
+This logic prevents a later {{_mongoc_validate_replace()}} call from overwriting a previous error, which is good, but it effectively makes {{mongoc_bulk_operation_replace_one()}} a NOP with no way to indicate that to the user. It would be better to return false if there is a pre-existing error. Also, the insert and update paths are missing equivalent logic (i.e. NOP on a pre-existing error) entirely, which means they may overwrite a previous error.",Bug,libmongoc,,Related:CDRIVER-2018|Related:HHVM-227|Related:PHPC-712|Related:CDRIVER-1341
+26,CSHARP-3919,https://jira.mongodb.org/browse/CSHARP-3919,cross_driver_inconsistency,,low,mentions other driver,not_relevant,,Drivers should retry operations if connection handshake fails,"This ticket was split from DRIVERS-746, please see that ticket for a detailed description. ",Bug,,size-small,Issue split:DRIVERS-746
+27,CSHARP-1016,https://jira.mongodb.org/browse/CSHARP-1016,not_relevant,,high,Packaging/build/doc/internal refactor,not_relevant,,LINQ driver does not support nested paging (i.e. take/skip).,"I am hosting a RESTful Web API service using OData v4.  When attempting to perform the following query:
+
+https://127.0.0.1:444/QA/main/Graphs/Items?$expand=Attributes&$skip=672
+
+we see the following error:
+
+""Skip and Take may only be used in conjunction with each other and cannot be separated by other operations.""
+
+The previously specified OData query results in paging on both the entity set for 'Items' and the contained entity set 'Attributes' because we have a page size set of 672 also, which results in a take being applied to the expression over the Attributes entity set.
+
+For example, here is the expression that fails:
+
++		_expression	{value(MongoDB.Driver.Linq.MongoQueryable`1[SE.OIP.DFL.Domain.Entities.Graphs.Item]).Where(o => ((o.Tenant == value(SE.OIP.DFL.Data.Repository.Mongo.Graphs.ItemsMongoRepository).tenant) AndAlso (o.Storage == value(SE.OIP.DFL.Data.Repository.Mongo.Graphs.ItemsMongoRepository).storage))).OfType().OrderBy($it => $it.InstanceId).Skip(value(System.Web.OData.Query.Expressions.LinqParameterContainer+TypedLinqParameterContainer`1[System.Int32]).TypedProperty).Select(Param_0 => new SelectAllAndExpand`1() {ModelID = ""1ca23847-7ec1-49d4-898f-49e8dfe03a24"", Instance = Param_0, Container = new CollectionExpandedProperty`1() {Name = ""Attributes"", Collection = Param_0.Attributes.Take(value(System.Web.OData.Query.Expressions.LinqParameterContainer+TypedLinqParameterContainer`1[System.Int32]).TypedProperty).Select(Param_1 => new SelectAll`1() {ModelID = ""1ca23847-7ec1-49d4-898f-49e8dfe03a24"", Instance = Param_1}), PageSize = 672}})}	System.Linq.Expressions.Expression {System.Linq.Expressions.MethodCallExpressionN}
+
+This fails when it attempts to translate 'take' and the previous expression is 'select', resulting in the exception.",Improvement,LINQ,,
+28,RUBY-1411,https://jira.mongodb.org/browse/RUBY-1411,not_relevant,,medium,No clear specification or cross-driver conformance signal.,not_relevant,,Bson::Document#fetch does not work with symbols,"When using #fetch method to retrieve a value of a Bson::Document with a symbol, an error is raised telling that the key was not found, but when using #[] with symbol it works.
+{code:java}
+irb(main):041:0> doc
+=> {""name""=>""Joe"", ""age""=>33}
+irb(main):042:0> doc[:name]
+=> ""Joe""
+irb(main):043:0> doc.fetch('name')
+=> ""Joe""
+irb(main):044:0> doc.fetch(:name)
+Traceback (most recent call last):
+ 3: from /Users/jmolina/.rbenv/versions/2.5.1/bin/irb:11:in `<main>'
+ 2: from (irb):44
+ 1: from (irb):44:in `fetch'
+KeyError (key not found: :name){code}
+Because of this restriction, we cannot use #fetch in our classes to protect us from having nil values, instead we will have to check every key and return an error if it does not exists.",Bug,BSON,,Problem/Incident:RUBY-1677
+29,CSHARP-2506,https://jira.mongodb.org/browse/CSHARP-2506,not_relevant,,low,No spec conformance or cross-driver issue detected.,not_relevant,,Reduce allocations in BsonClassMapSerializer.SerializeClass,"BsonClassMapSerializer.SerializeClass ([https://github.com/mongodb/mongo-csharp-driver/blob/dc2dbb5ff06fdea80b44a8c2295e542f166ccb16/src/MongoDB.Bson/Serialization/Serializers/BsonClassMapSerializer.cs#L579])
+
+calls .ToList() unconditionally like this:
+{code:java}
+var remainingMemberMaps = _classMap.AllMemberMaps.ToList();{code}
+This call can easily be avoided by moving the if check at [https://github.com/mongodb/mongo-csharp-driver/blob/dc2dbb5ff06fdea80b44a8c2295e542f166ccb16/src/MongoDB.Bson/Serialization/Serializers/BsonClassMapSerializer.cs#L584] into the loop at [https://github.com/mongodb/mongo-csharp-driver/blob/dc2dbb5ff06fdea80b44a8c2295e542f166ccb16/src/MongoDB.Bson/Serialization/Serializers/BsonClassMapSerializer.cs#L602]
+
+This helps to reduce allocations which can get substantial as shown by the following profiler output of the serialization of 2m+ complex documents:
+
+!image-2019-02-06-14-11-21-179.png!",Improvement,Serialization,devexp-product|performance,
+30,RUBY-3037,https://jira.mongodb.org/browse/RUBY-3037,cross_driver_inconsistency,index-management,high,References another driver,not_relevant,,Add index option wildcard_projection,"Mongo Ruby Driver is missing index alias option ""wildcard_projection"" for ""wildcardProjection""
+
+Refer to: mongodb.com/docs/manual/core/index-wildcard/
+
+Related to https://jira.mongodb.org/browse/MONGOID-5388",Improvement,,,
+31,NODE-410,https://jira.mongodb.org/browse/NODE-410,not_relevant,,low,Insufficient detail to classify.,not_relevant,,'error' event is not triggered on pipe error,"When doing a pipe on cursor with an error in query, there is no way to know about this error, even if you are subscribed to 'error' event on cursor. Instead, a runtime error is thrown with the following stacktrace:
+
+{noformat}
+Error: Cannot switch to old mode now.
+    at emitDataEvents (_stream_readable.js:730:11)
+    at Readable.pause (_stream_readable.js:721:3)
+    at Cursor.destroy (/home/weekens/workspace/saymon/backend/server/node_modules/mongodb/lib/cursor.js:697:8)
+    at /home/weekens/workspace/saymon/backend/server/node_modules/mongodb/lib/cursor.js:735:31
+    at handleCallback (/home/weekens/workspace/saymon/backend/server/node_modules/mongodb/lib/utils.js:95:12)
+    at /home/weekens/workspace/saymon/backend/server/node_modules/mongodb/lib/cursor.js:419:20
+    at handleCallback (/home/weekens/workspace/saymon/backend/server/node_modules/mongodb/node_modules/mongodb-core/lib/cursor.js:234:5)
+    at /home/weekens/workspace/saymon/backend/server/node_modules/mongodb/node_modules/mongodb-core/lib/cursor.js:535:22
+    at queryCallback (/home/weekens/workspace/saymon/backend/server/node_modules/mongodb/node_modules/mongodb-core/lib/cursor.js:170:14)
+    at b (domain.js:183:18)
+{noformat}
+
+This also concerns any error, that can happen during diver<->DB communication. Query error is only for the sake of simplicity.
+
+Sample code to reproduce the problem:
+
+{code:javascript}
+var cursor = mongoDb.collection('myCollection').find({
+  timestamp: { $ltx: request.params.maxTimestamp } // Error in query.
+});
+
+cursor.on('error', function(err) {
+  log.error('DB query failed:' + err);
+
+  next(err);
+});
+
+cursor.pipe(response); // Runtime error is thrown, 'error' event is not triggered.
+{code}
+
+Wasn't tested on Node v0.12, but _stream_readable.js code in Node v0.12 contains the same error condition, so, the problem is likely to reproduce in Node v0.12 as well.",Bug,,external-user,
+32,JAVA-3530,https://jira.mongodb.org/browse/JAVA-3530,driver_spec_nonconformance,bson,low,Spec area: bson.,not_relevant,,Getting started page should emphasis that codec registry order is important,"The example in [Creating a Custom CodecRegistry|http://mongodb.github.io/mongo-java-driver/3.11/driver/getting-started/quick-start-pojo/#creating-a-custom-codecregistry] doesn't highlight that the order of the registries is important, although the [Javadoc|https://api.mongodb.com/java/3.2/?org/bson/codecs/configuration/CodecRegistries.html] does.
+
+I suggest we add a little note under the example to bring attention to this.",Improvement,,,
+33,PERL-528,https://jira.mongodb.org/browse/PERL-528,driver_spec_nonconformance,bson,medium,Regex flag handling.,driver_spec_nonconformance,,Add support for serializing 'u' and 'l' regex flags,"Native perl regexes support 'u' and 'l', but the driver will drop them on serialization.",Bug,Perl driver,,
+34,RUBY-1032,https://jira.mongodb.org/browse/RUBY-1032,driver_spec_nonconformance,,low,Insufficient detail for classification.,not_relevant,,BSON::Document doesn't assign or merge! quite like a Hash,"I've found this bug through an issue I'm having with Mongoid, so I'm not 100% sure if this is an issue with BSON, or that Mongoid is using it wrong.
+
+Consider the following code:
+{code:example.rb}
+attributes = BSON::Document.new
+attributes[""test""] = nil
+(attributes[""test""] ||= {}).merge!({""test"" => ""test})
+# You'd expect attributes[""test""] to be {""test"" => ""test""} 
+# here, but it's actually {}
+{code}
+
+The last line is found in Mongoid here: https://github.com/mongodb/mongoid/blob/master/lib/mongoid/attributes.rb#L179 and (I think) is the result is causing issues like this: http://stackoverflow.com/questions/29899935/mongoid-localized-field-not-being-set-in-first-form-submission
+
+It works fine if you make {{attributes}} a Hash instead, so I presume it's something the way {{||=}} or {{merge!}} are implemented in BSON::Document?
+
+Writing my example differently, e.g.
+{code:example.rb}
+attributes = BSON::Document.new
+attributes[""test""] = nil
+attributes[""test""] ||= {}
+attributes[""test""].merge!({""test"" => ""test})
+{code}
+
+also works as expected.",Bug,BSON,,Related:MONGOID-4054
+35,CSHARP-3757,https://jira.mongodb.org/browse/CSHARP-3757,avoidable_by_spec_conformance,retryable-reads|retryable-writes,high,"Direct retries to another mongos; DRIVERS-1571, retryability spec.",not_relevant,,Direct read/write retries to another mongos if possible,"{html}
+  <div id=""script-target-wrapper"">
+    <br>
+    <b>DRIVERS Ticket Description</b>
+    <div id=""lang-script-target"">
+      <!-- This block of HTML and the script in it auto-populate the      DRIVERS ticket description on page load. -->
+      Script Target - If you can read this text, the script has failed
+      <script>
+        $.get('https://jira.mongodb.org/browse/DRIVERS-1571',
+          function(data) {
+            var description = $(data).find(""#description-val"");
+            $(""#lang-script-target"").html(description);
+        });
+      </script>
+    </div>
+  </div>
+{html}",Improvement,Retryability,,Gantt End to End:CSHARP-4958|Issue split:DRIVERS-1571
+36,JAVA-5130,https://jira.mongodb.org/browse/JAVA-5130,not_relevant,,high,"Test infrastructure for Atlas cluster setup, not spec-related.",not_relevant,,"Atlas cluster setup script should create a unique cluster per-invocation, not per commit","This ticket was split from {{DRIVERS-2710}}, please see that ticket for a detailed description. ",Improvement,,,Issue split:DRIVERS-2710
+37,RUBY-2609,https://jira.mongodb.org/browse/RUBY-2609,avoidable_by_spec_conformance,cmap,high,Links to DRIVERS-1692; TCP_USER_TIMEOUT connection pool spec requirement.,not_relevant,,Enable TCP_USER_TIMEOUT by default when possible,"
+{html}
+    <div id=""script-target-wrapper"">
+        <br>
+        <b>DRIVERS Ticket Description</b>
+        <div id=""lang-script-target"">
+            <!-- This block of HTML and the script in it auto-populate the DRIVERS ticket description on page load. -->
+            Script Target - If you can read this text, the script has failed
+            <script>
+                $.get('https://jira.mongodb.org/browse/DRIVERS-1692', function(data) {
+                    var description = $(data).find(""#description-val"");
+                    $(""#lang-script-target"").html(description);
+                });
+            </script>
+        </div>
+    </div>
+{html}
+",Improvement,Spec Comp,,Issue split:DRIVERS-1692
+38,CDRIVER-901,https://jira.mongodb.org/browse/CDRIVER-901,avoidable_by_spec_conformance,write-concern,medium,Bug in spec area bson,driver_spec_nonconformance,,_mongoc_write_result_complete() does not populate bson_error_t from write concern errors,"With CDRIVER-710, {{mongoc_write_result_t}} now stores an array of {{writeConcernErrors}}. As I was updating PHPC for this API change, I traced how write concern errors are reported, since we need to turn those {{bson_error_t}} output variables into exceptions.
+
+I traced the logic from {{mongoc_bulk_operation_execute()}} through to {{_mongoc_write_result_complete()}} and it appears that the {{bson_error_t}} is only ever set from write errors; however, the function may still return false for either {{!result->failed}} or {{bson_empty0 (&result->writeConcernErrors)}} (which is equivalent to checking for a non-zero {{result.n_writeConcernErrors}} value).
+
+I can't speak for the {{!result->failed}} case, but I believe we want to integrate [mongos' write concern error merging logic|https://github.com/mongodb/mongo/blob/r3.1.8/src/mongo/s/write_ops/batch_write_op.cpp#L754-l776] here, which I would otherwise need to do in PHPC-434 and HHVM-112.",Bug,libmongoc,,Depends:HHVM-112|Depends:PHPC-434|Related:CDRIVER-710|Related:SPEC-340
+39,CDRIVER-1891,https://jira.mongodb.org/browse/CDRIVER-1891,avoidable_by_spec_conformance,bson,medium,Component bug in spec area,not_relevant,,leaks in test_bson_integer_width,https://evergreen.mongodb.com/task/libbson_releng_debug_compile_valgrind_d530b4b0ebe66e7acd97d48b81dda6c00fa4648e_16_10_28_18_23_07,Bug,libbson|Testing,,
+40,PHPC-1359,https://jira.mongodb.org/browse/PHPC-1359,driver_spec_nonconformance,transactions,high,Transactions spec requires error for sharded on 4.2.,not_relevant,,Ensure 4.0 drivers return an error when attempting sharded transactions on 4.2,See DRIVERS-624 for details.,Improvement,,,Depends:DRIVERS-624|Related:PHPC-1393|Related:CDRIVER-3067
+41,JAVA-5486,https://jira.mongodb.org/browse/JAVA-5486,driver_spec_nonconformance,auth|connection-string,high,DRIVERS-2915 disallow comma in authMechanismProperties,not_relevant,,Disallow comma character in authMechanismProperties connection string value,"This ticket was split from {{DRIVERS-2915}}, please see that ticket for a detailed description. ",Bug,Authentication,,Documented:DOCSP-40348|Issue split:DRIVERS-2915
+42,RUBY-1409,https://jira.mongodb.org/browse/RUBY-1409,not_relevant,,medium,No clear specification or cross-driver conformance signal.,not_relevant,,Document jruby support - driver,,Improvement,Docs,,Depends:RUBY-1368
+43,PHPC-522,https://jira.mongodb.org/browse/PHPC-522,avoidable_by_spec_conformance,bson,medium,Bug in spec-covered bson.,not_relevant,,make coveralls fails for PHP 7 builds on Travis CI,"See: https://travis-ci.org/mongodb/mongo-php-driver/jobs/97716867#L2139 (built for [PR #175|https://github.com/mongodb/mongo-php-driver/pull/175#issuecomment-165878968]).
+
+{noformat}
+Traceback (most recent call last):
+  File ""/usr/local/bin/coveralls"", line 9, in <module>
+    load_entry_point('cpp-coveralls==0.3.10', 'console_scripts', 'coveralls')()
+  File ""/usr/local/lib/python2.7/dist-packages/cpp_coveralls/__init__.py"", line 96, in run
+    cov_report = coverage.collect(args)
+  File ""/usr/local/lib/python2.7/dist-packages/cpp_coveralls/coverage.py"", line 378, in collect
+    with io.open(source_file_path, mode='rb') as src_file:
+IOError: [Errno 2] No such file or directory: '/home/travis/build/mongodb/mongo-php-driver/src/BSON/php_phongo_structs-7.h'
+make: *** [coveralls] Error 1
+{noformat}",Bug,,,
+44,CSHARP-3061,https://jira.mongodb.org/browse/CSHARP-3061,cross_driver_inconsistency,,low,References another driver; insufficient detail to classify further.,spec_ambiguity_or_gap,,Clarify how a driver must handle wrong set name in single topology,"    h4. Description of Drivers Ticket:
+    The SDAM specification allows specifying replica set name in single topology (https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#initial-setname). If this is done, the set name specified by the application must match the set name reported by the deployment. https://github.com/mongodb/specifications/blob/master/source/server-discovery-and-monitoring/server-discovery-and-monitoring.rst#verifying-setname-with-topologytype-single says:
+
+> A client MAY allow the user to supply a setName with an initial TopologyType of Single. In this case, if the ServerDescription's setName is null or wrong, the client MUST throw an error on every operation.
+
+The Ruby driver satisfies this requirement by checking setName during server selection if the deployment is in single topology. However the prescribed server selection procedure in single topology (https://github.com/mongodb/specifications/blob/master/source/server-selection/server-selection.rst#topology-type-single) does not mention such a check.
+
+In order to improve consistency in how different drivers handle wrong setName when in single topology, either the SDAM or server selection specifications could either recommend or mandate a specific procedure that the drivers must follow when the set name of the deployment does not match the expected set name.
+    See DRIVERS-980 for updated details.
+    ",Improvement,,,Depends:CSHARP-2962|Depends:DRIVERS-980
+45,PHPC-1683,https://jira.mongodb.org/browse/PHPC-1683,avoidable_by_spec_conformance,crud|retryable-writes|write-concern,medium,Component bug in crud area,driver_spec_nonconformance,,Collect error labels from writeConcernErrors in libmongoc bulk write replies,"DRIVERS-1396 introduced a retryable writes spec test that adds an error label to a write concern error _and_ exposes the error to the test runner (since times:2 overcomes the first retry attempt). This resulted in a PHPLIB test failure because error labels within {{writeConcernErrors}} of libmongoc's bulk write reply are never collected by {{phongo_exception_add_error_labels}}.
+
+libmongoc may be unique among drivers in that it reports all write concern errors in an array (CDRIVER-710) instead of a consolidated {{writeConcernError}} field described in the CRUD spec. This is a separate issue related to DRIVERS-1396.",Bug,,,Depends:PHPLIB-585|Related:CDRIVER-710|Related:DRIVERS-1396
+46,GODRIVER-1905,https://jira.mongodb.org/browse/GODRIVER-1905,cross_driver_inconsistency,,high,references another driver or cross-driver inconsistency,spec_ambiguity_or_gap,,Provide explicit guidance on handling command errors that occur before the handshake completes during operation execution,"{html}
+    <div id=""script-target-wrapper"">
+        <br>
+        <b>DRIVERS Ticket Description</b>
+        <div id=""lang-script-target"">
+            <!-- This block of HTML and the script in it auto-populate the DRIVERS ticket description on page load. -->
+            Script Target - If you can read this text, the script has failed
+            <script>
+                $.get('https://jira.mongodb.org/browse/DRIVERS-1476', function(data) {
+                    var description = $(data).find(""#description-val"");
+                    $(""#lang-script-target"").html(description);
+                });
+            </script>
+        </div>
+    </div>
+{html}
+",Improvement,,,Depends:GODRIVER-1827|Issue split:DRIVERS-1476|Related:GODRIVER-2165
+47,RUBY-1002,https://jira.mongodb.org/browse/RUBY-1002,driver_spec_nonconformance,,low,Insufficient detail for classification.,avoidable_by_spec_conformance,,slave_ok is no longer logged by the Ruby Driver,"Sometime in the last few weeks, something changed and slave_ok no longer gets logged when doing secondary reads. I haven't had time to figure out which commit caused it, but somewhere between 739ca3905ef107c5731edd3d9b93ea3a87e4ab31 and HEAD.
+
+{code}
+MyModel.with(:read => {:mode => :secondary_preferred}).count
+D, [2015-08-17T18:31:02.695249 #72908] DEBUG -- : MONGODB | localhost:27017 | appboy_development.count | STARTED | {""count""=>""my_models"", ""query""=>{}}
+{code}",Bug,,,
+48,GODRIVER-2243,https://jira.mongodb.org/browse/GODRIVER-2243,cross_driver_inconsistency,,high,references another driver or cross-driver inconsistency,driver_spec_nonconformance,,IndexView.CreateMany should wrap driver.ErrUnacknowledgedWrite,"If I create an index like so:
+{code:java}
+iv := db.Collection(""foo"", options.Collection().SetWriteConcern(writeconcern.New(writeconcern.W(0)))).Indexes()
+_, err := iv.CreateOne(context.TODO(), mongo.IndexModel{Keys: bson.D{{Key: ""user_id"", Value: 1}}})
+{code}
+I get back the error go.mongodb.org/mongo-driver/x/mongo/driver.ErrUnacknowledgedWrite. This should presumably be mongo.ErrUnacknowledgedWrite! Other operations that return this call processWriteErr() to transform it, but it's missing from IndexView.CreateMany().",Bug,,,
+49,RUBY-2326,https://jira.mongodb.org/browse/RUBY-2326,avoidable_by_spec_conformance,cursors,high,Cursor reaper should track cursor ids per spec requirement,not_relevant,,Redo cursor reaper to track cursor ids,"Currently cursor reaper stores killCursors operation specifications which are composed when cursors are created based on the server's support of find command at that time. Instead the reaper should track cursor ids and compose the operations when cursors are actually being killed based on the properties of the connection obtained for the kill operation.
+
+This work is also a prerequisite for repairing the intermittent failures in the cursor reaping integration test.",Improvement,,no-changelog,Related:RUBY-2110|Related:RUBY-2220
+50,GODRIVER-536,https://jira.mongodb.org/browse/GODRIVER-536,not_relevant,,low,Insufficient detail or tangential to specs.,not_relevant,,Upgrade to Go 1.11,"Update Evergreen to run on Go 1.11 and update documentation. We additionally need to determine what should be tested in the Evergreen for each version, since we'll need to support at least Go 1.10 and Go 1.11.",Improvement,,,
+51,JAVA-5507,https://jira.mongodb.org/browse/JAVA-5507,cross_driver_inconsistency,auth|auth-scram,medium,Involves connection-string,not_relevant,,SCRAM-SHA-256 looks to be not FIPS compliant,"h4. Summary
+
+The [https://www.mongodb.com/docs/manual/core/security-scram/#std-label-authentication-scram] page states that SCRAM-SHA-256 can be used in the FIPS mode.
+
+At the same time looking into mongo-java-driver: [https://github.com/mongodb/mongo-java-driver/blob/98934ddc52efa48e7e3b41339e57ff4c8dc89322/driver-core/src/main/com/mongodb/internal/connection/ScramShaAuthenticator.java#L258|https://github.com/mongodb/mongo-java-driver/blob/98934ddc52efa48e7e3b41339e57ff4c8dc89322/driver-core/src/main/com/mongodb/internal/connection/ScramShaAuthenticator.java#L249]
+
+it looks that:
+{code:java}
+private byte[] hi(final byte[] password, final byte[] salt, final int iterations) throws SaslException
+{code}
+is kind of key derivation function implementation. While SHA-256 is OK, still the problem is that imho any crypto/key derivation should be done via FIPS validated/certified crypto module, so for example PBKDF2 with Bouncy Castle FIPS via JCA.
+
+So, any crypto implemented outside of the certified module makes the code not FIPS compliant and SCRAM-SHA-256 should not be available in the FIPS mode, at least with that driver in the current form.
+h4. Additional Background
+
+[https://csrc.nist.gov/pubs/sp/800/132/final|https://csrc.nist.gov/pubs/sp/800/132/final_]",Improvement,Authentication,,Documented:DOCSP-41474|Duplicate:JAVA-5534|Related:DRIVERS-2931
+52,JAVA-6101,https://jira.mongodb.org/browse/JAVA-6101,driver_spec_nonconformance,,high,RawBsonDocument serialization performance regression in 5.5.,not_relevant,,RawBsonDocument serialization regression introduced in 5.5,"h4. Summary
+
+Mongot is currently using the mongodb-driver-sync:4.11.5  and does a lot a manipulation of RawBsonDocuments when materializing its result sets. We rely on the fact that serializing a RawBsonDocument is a simple, efficient array copy. When upgrading the mongodb-driver-sync to 5.5.3, we see several performance tests showing >100% regressions in E2E latency.
+
+ 
+
+Version 5.5.1 without patch vs Baseline 4.11.5:
+
+[https://performance-analyzer.server-tig.prod.corp.mongodb.com/perf-analyzer-viz/?comparison_id=698cc5e65ae6ba72cd67632b]
+
+ 
+
+Version 5.5.1 with patch vs Baseline 4.11.5: [https://performance-analyzer.server-tig.prod.corp.mongodb.com/perf-analyzer-viz/?comparison_id=698d00816295f61738b0357c&selected_tab=scatter-plots&percent_filter=0%7C%7C100&z_filter=0%7C%7C10&filter_type=Default]
+
+ 
+
+Disclaimer: The following Root Cause Analysis was identified by AI, but we verified its proposed workaround resolved the observed regressions.
+
+It seems that [https://github.com/mongodb/mongo-java-driver/pull/1632|https://github.com/mongodb/mongo-java-driver/pull/1632/changes] changed BsonDocumentCodec to lookup Codecs by BsonType rather than by `getClass()`. This is problematic because BsonDocument and RawBsonDocument share a BsonType but require different handling. In the new implementation RawBsonDocuments are serialized by iterating over their values, deserializing them, and reserializing them. This results in several perf tests showing >100% increase in E2E latencies.
+
+ 
+h4. How to Reproduce
+
+Create a BsonDocument that contains a BsonArray of 100,000 small RawBsonDocuments and serialize the object to a byte[].
+
+ 
+
+This is the fix suggested by Cursor. Please let us know if we can do something better.
+{code:java}
+/**
+ * Creates a {@link BsonDocumentCodec} backed by a {@link CodecRegistry} that provides {@link
+ * RawBsonDocumentAwareBsonDocumentCodec} for {@code BsonDocument.class}. Because the codec's
+ * internal {@code BsonTypeCodecMap} resolves the codec for {@code BsonType.DOCUMENT} from the
+ * registry (keyed by {@code BsonDocument.class}), this ensures our override is used for ALL
+ * nested document values — including {@link RawBsonDocument} instances inside arrays and
+ * sub-documents.
+ */
+private static BsonDocumentCodec createOptimizedCodec() {
+  // A provider that returns our RawBsonDocument-aware codec for BsonDocument.class, delegating
+  // everything else to the standard BsonValueCodecProvider.
+  CodecProvider optimizedProvider =
+      new CodecProvider() {
+        private final BsonValueCodecProvider delegate = new BsonValueCodecProvider();
+
+        @Override
+        @SuppressWarnings(""unchecked"")
+        public <T> Codec<T> get(Class<T> clazz, CodecRegistry registry) {
+          if (clazz == BsonDocument.class) {
+            return (Codec<T>) new RawBsonDocumentAwareBsonDocumentCodec(registry);
+          }
+          return delegate.get(clazz, registry);
+        }
+      };
+  CodecRegistry registry = CodecRegistries.fromProviders(optimizedProvider);
+  return new RawBsonDocumentAwareBsonDocumentCodec(registry);
+}
+
+/**
+ * A {@link BsonDocumentCodec} subclass that restores the BSON 4.x behavior of encoding {@link
+ * RawBsonDocument} values by piping their raw bytes directly, rather than decoding and
+ * re-encoding each field.
+ *
+ * <p>In driver 5.x, {@link BsonDocumentCodec} resolves child codecs via a {@code
+ * BsonTypeCodecMap} keyed by {@code BsonType}, so a {@link RawBsonDocument} (which has
+ * BsonType.DOCUMENT) gets the generic {@link BsonDocumentCodec} codec. That codec calls {@code
+ * RawBsonDocument.entrySet()} which lazily decodes the raw bytes, then re-encodes every field —
+ * an O(fields) decode+encode instead of an O(bytes) memcpy.
+ *
+ * <p>This class overrides {@code encode()} to detect {@link RawBsonDocument} and use pipe-based
+ * byte copying. Because it is registered in the codec registry as the codec for {@code
+ * BsonDocument.class}, the internal {@code BsonTypeCodecMap} maps {@code BsonType.DOCUMENT} to
+ * this codec, so the optimization applies recursively to all nested document values.
+ */
+static final class RawBsonDocumentAwareBsonDocumentCodec extends BsonDocumentCodec {
+  private static final RawBsonDocumentCodec RAW_CODEC = new RawBsonDocumentCodec();
+
+  RawBsonDocumentAwareBsonDocumentCodec(CodecRegistry registry) {
+    super(registry);
+  }
+
+  @Override
+  public void encode(BsonWriter writer, BsonDocument document, EncoderContext encoderContext) {
+    if (document instanceof RawBsonDocument rawDoc) {
+      // Delegate to RawBsonDocumentCodec which pipes the raw bytes directly.
+      RAW_CODEC.encode(writer, rawDoc, encoderContext);
+    } else {
+      super.encode(writer, document, encoderContext);
+    }
+  }
+} {code}",Bug,Codecs,,
+53,CSHARP-1582,https://jira.mongodb.org/browse/CSHARP-1582,avoidable_by_spec_conformance,crud,low,"spec area bug, prevention unclear",not_relevant,,"Linq queries are getting the right result, but hydrates more elements than expected.","Hi all,
+
+Using c# driver through Linq expressions, we've noticed that many objects are hydrated when using AsQueryable() + Linq expresion even though the query returns one result.
+
+...
+var collection = _mongoDatabase.GetCollection<User>(""Users"");
+var usersFound = collection.AsQueryable().Where(x => x.UserName == ""John Doe"");
+...
+
+By the other hand, if we use Eq method, the behavior is the expected: there is only one object hydrated.
+
+...
+var filter = Builders<User>.Filter.Eq(""UserName"", ""John Doe"");
+var usersFound = collection.Find(filter);
+...
+
+Is that te implemented behaviour of the driver using Linq?
+
+Many thanks!",Improvement,API|Performance,,
+54,NODE-2271,https://jira.mongodb.org/browse/NODE-2271,cross_driver_inconsistency,,medium,Mentions other driver project in links or text.,driver_spec_nonconformance,,watch API changeStream not notified of closed connection ,"I have been monitoring a peek-a-boo issue on servers that are relying on `db.watch` API. After an arbitrary period of time the `changeStream` will stop receiving events and none of the following events are fired [ever]:
+
+{code}
+const changeStream = db.watch()
+...
+changeStream.on('error', event => ...)
+changeStream.on('end', event => ...)
+changeStream.on('close', event => ...)
+{code}
+
+Until recently, I did not have _any_ logs to correlate the reason for the {{changeStream}} to stop receiving events so I attempted a band-aid fix arbitrary ""disconnects"" with:
+
+{code}
+setInterval(() => {
+  if (changeStream.isClosed())
+    throw new Error('changeStream is closed')
+}, 60000)
+{code}
+
+When the {{changeStream}} has stopped receiving events, the above interval call to {{changeStream.isClosed()}} is still returning {{false}} (thinking the changeStream is still open). 
+
+I discovered (through the help of Sentry error logging) that another server (API web-service) has received this error roughly at the time of the last event received on the above {{changeStream}}:
+
+{code}
+MongoTimeoutError: Server selection timed out after 30000 ms
+ File ""/srv/ws-core/node_modules/mongodb/lib/core/sdam/topology.js"", line 798, col 7, in selectServers
+ new MongoTimeoutError(`Server selection timed out after ${timeout} ms`),
+ File ""/srv/ws-core/node_modules/mongodb/lib/core/sdam/topology.js"", line 872, col 7, in NativeTopology.descriptionChangedHandler
+ selectServers(topology, selector, timeout, start, callback);
+ File ""events.js"", line 277, col 13, in Object.onceWrapper
+ File ""events.js"", line 194, col 15, in NativeTopology.emit
+ File ""domain.js"", line 441, col 20, in NativeTopology.EventEmitter.emit
+ File ""/srv/ws-core/node_modules/mongodb/lib/core/sdam/topology.js"", line 524, col 10, in NativeTopology.serverUpdateHandler
+ this.emit(
+ File ""events.js"", line 189, col 13, in Server.emit
+ File ""domain.js"", line 441, col 20, in Server.EventEmitter.emit
+ File ""/srv/ws-core/node_modules/mongodb/lib/core/sdam/monitoring.js"", line 182, col 12, in successHandler
+ server.emit('descriptionReceived', new ServerDescription(server.description.address, isMaster));
+ File ""/srv/ws-core/node_modules/mongodb/lib/core/sdam/monitoring.js"", line 195, col 7, in checkServer
+ successHandler(isMaster);
+{code}
+
+Because of the business critical logic, this stoppage in changeStream events is recognized within a few hours triggering investigation into _why_ - it has always resulted in the requirement to restart the Node.js app that is creating the {{changeStream}}.
+
+*Expected Behavior*
+ # I expect an event (`error`, `close`, `timeout`, etc) to be fired when a changeStream is no longer ""connected"".
+ # I expect `changeStream.isClosed()` to be accurate every time it is called.",Bug,,external-user,
+55,CDRIVER-2545,https://jira.mongodb.org/browse/CDRIVER-2545,not_relevant,,high,"Contains ""build"" keyword; build/doc/packaging related.",not_relevant,,Make Secure Transport the default on macOS and SChannel the default on Windows,"Before, I was afraid to break compatibility for people accustomed to our build systems' default behavior: build with OpenSSL if possible, even on macOS where a better alternative is always available. There's growing pressure to require TLS 1.1, however, which isn't supported by the OpenSSLs that old macOS shipped. Let's switch the default in the CMake build system and make Secure Transport the default on macOS.",Improvement,Build|tls,,Duplicate:CDRIVER-1121|Related:PHPC-1156
+56,RUBY-2783,https://jira.mongodb.org/browse/RUBY-2783,cross_driver_inconsistency,bson,medium,references another driver,not_relevant,,"Return a String without ""$oid"" from BSON::ObjectId#as_json and #to_json ","### The Change
+
+Currently, `BSON::ObjectId#as_json` will return `\{ ""$oid"" => ""03d623ca58edf9046e207565"" }`
+
+This PR does what 99% of users prefer: return a plain String `""03d623ca58edf9046e207565""`
+
+I've included a ""Breaking change"" notice in the docs for this.
+
+### Why
+
+While `$oid` may be the correct way to represent an ObjectID in strict ""BSON"", it is not a practical way to represent an ObjectID in ""JSON"" as used in real world apps. The standard use case for JSON (`.as_json` method) is **to serialize objects for HTTP APIs**. The primary goal of Mongoid is for us as developers not to have to worry about BSON internal representations; instead we think in terms of the Ruby app domain. (Mongoid / Mongo Ruby Driver handles the BSON nuts-and-bolts for us.)
+
+### Other Ideas
+
+We could also add `BSON::ObjectId#as_bson` and `Object#as_bson` (which delegates to `.as_json` in all cases except `ObjectId`.) I don't think it's particularly useful, but I'd be happy to implement it if the Mongo team would like. (We'd probably want to call `mongoize` or `evolve` as well...)
+
+### More Background
+
+The current behavior drives Rails users absolutely crazy as you can see in the following issues, and **nearly everyone ends up monkey-patching this method** after hours of debugging frustration. Here are some a few examples out of hundreds:
+- https://medium.com/aviabird/mongoid-how-to-serialize-to-json-with-a-string-id-attribute-2d5c1bc284a7
+- https://stackoverflow.com/questions/23505247/have-to-json-return-a-mongoid-as-a-string
+- https://stackoverflow.com/questions/18646223/ruby-model-output-id-as-object-oid
+- https://github.com/nesquena/rabl/issues/337
+
+Incidentally, Mongoid 3.1 and earlier used to serialize this as a String; when it changed to `$oid` it broke my and many other users apps--this unexpected behavior causes lots of bugs.",Improvement,BSON,,Related:MONGOID-5162|Related:MONGOID-5234|Related:RUBY-2810
+57,NODE-2977,https://jira.mongodb.org/browse/NODE-2977,driver_spec_nonconformance,connection-string,high,Windows path parsing bug in connection string tlsCAFile option.,driver_spec_nonconformance,,Query parameters with path in connection string not working on windows,"h3. Problem Description
+
+Some of the query parameters in a connection string allow a file path to be specified, e.g. the {{tlsCAFile}} option, that will be resolved to the file contents before connecting. However, using an absolute path on Windows will result in an error:
+
+{{TypeError [ERR_INVALID_ARG_TYPE]: The ""path"" argument must be of type string or an instance of Buffer or URL. Received an instance of Object}}
+
+It seems that the error is caused by the {{parseQueryStringItemValue}} method ([https://github.com/mongodb/node-mongodb-native/blob/master/src/connection_string.ts#L154)|https://github.com/mongodb/node-mongodb-native/blob/master/src/connection_string.ts#L154).]. It checks for the presence of a {{:}} in the parameter value and if so converts it into an object with key-values by splitting. However, an absolute path on windows will always start with {{<drive letter>:\...}} so the {{:}} will always be present.
+
+This at least affects v4 - not tested for 3.x.
+h3. Steps to Reproduce
+
+Try connecting to a MongoDB node passing the {{tlsCAFile}} query parameter in the connection string on Windows with a valid absolute path.
+h3. Expected Results
+
+The connection is created and works/fails according to the CA provided.
+h3. Actual Results
+
+No connection is created but an error is thrown while trying to execute {{fs.readFileSync}} when resolving the {{tlsCAFile}}.",Bug,Shell,,Depends:MONGOSH-418|Depends:MONGOSH-193
+58,CDRIVER-4598,https://jira.mongodb.org/browse/CDRIVER-4598,driver_spec_nonconformance,wire-protocol,medium,Ticket involves BSON serialization,driver_spec_nonconformance,,_mongoc_rpc_scatter segfaults when parsing an OP_MSG with the optional CRC checksum present,"h4. Summary
+
+As part of the development of the [serverless proxy|https://github.com/10gen/serverless-proxy], which is an Envoy process with custom filters to transcode the wire protocol into gRPC that will be used in Atlas Serverless, we are using some internal functionality of the C driver to perform wire protocol parsing (basically using {{_mongoc_rpc_scatter}} and various other functions).
+
+We noticed that the serverless proxy segfaults when parsing an {{OP_MSG}} with the optional CRC checksum present. This occurs during the initial SASL handshake when connecting to Envoy using the legacy shell. The segfault occurs in {{{}_mongoc_rpc_scatter_msg{}}}, which is invoked by {{{}_mongoc_rpc_scatter{}}}.
+
+After some initial digging, I think the use of {{strlen}} [here|https://github.com/mongodb/mongo-c-driver/blob/e24a7a2eb6486d142dd13a0472d76ff25188ed12/src/libmongoc/src/mongoc/mongoc-rpc.c#L519-L523] is unsafe. In fact, I think we should be using {{strnlen}} everywhere in {{mongoc-rpc.c}} as a precaution.
+
+Below is an example of a buffer that causes {{_mongoc_rpc_scatter}} to segfault:
+{code}  // The buffer contains 179 bytes in little-endian order that correspond to the valid wire protocol
+  // message:
+  // {
+  //   ""saslStart"": 1,
+  //   ""mechanism"": ""SCRAM-SHA-1"",
+  //   ""options"":
+  //   {
+  //     ""skipEmptyExchange"": true
+  //   },
+  //   ""payload"":
+  //   {
+  //     ""$binary"":
+  //     {
+  //       ""base64"": ""biwsbj11c2VyLHI9Wmo5dkFXYUFmZUNWRkJHRU5TMkd0YnZXZEE2czIraG8="",
+  //       ""subType"": ""00""
+  //     }
+  //   },
+  //   ""$db"": ""admin""
+  // }
+  //
+  // In this case, the optional CRC checksum is appended to the end of the OP_MSG. Refer to
+  // https://www.mongodb.com/docs/manual/reference/mongodb-wire-protocol and https://bsonspec.org
+  // for more information about the MongoDB wire protocol and the BSON specification, respectively.
+  // clang-format off
+  unsigned char buf[] = {
+      // -----------------------
+      // STANDARD MESSAGE HEADER
+      // -----------------------
+      0xb3, 0x00, 0x00, 0x00, // messageLength (0x000000b3 = 179)
+      0x01, 0x00, 0x00, 0x00, // requestID (0x00000001 = 1)
+      0x00, 0x00, 0x00, 0x00, // responseTo (0x00000000 = 0)
+      0xdd, 0x07, 0x00, 0x00, // opCode (0x000007dd = 2013), indicating OP_MSG
+      // ----------------
+      // OP_MSG FLAG BITS
+      // ----------------
+      0x01, 0x00, 0x00, 0x00, // OP_MSG flagBits (0x00000001 = checksumPresent bit set)
+      // ---------------------
+      // OP_MSG SECTIONS ARRAY
+      // ---------------------
+      0x00, // OP_MSG sections kind byte (0x00), indicating body is single BSON object
+      // ------------------
+      // SINGLE BSON OBJECT
+      // ------------------
+      0x9a, 0x00, 0x00, 0x00,                                                                                     // BSON object size (0x0000009a = 154)
+      0x10,                                                                                                       // BSON element type (0x10 = int32)
+      0x73, 0x61, 0x73, 0x6c, 0x53, 0x74, 0x61, 0x72, 0x74, 0x00,                                                 // BSON element cstring field name (""saslStart"")
+      0x01, 0x00, 0x00, 0x00,                                                                                     // BSON element value (0x00000001 = 1)
+      0x02,                                                                                                       // BSON element type (0x02 = UTF-8 string)
+      0x6d, 0x65, 0x63, 0x68, 0x61, 0x6e, 0x69, 0x73, 0x6d, 0x00,                                                 // BSON element cstring field name (""mechanism"")
+      0x0c, 0x00, 0x00, 0x00, 0x53, 0x43, 0x52, 0x41, 0x4d, 0x2d, 0x53, 0x48, 0x41, 0x2d, 0x31, 0x00,             // BSON element value (""SCRAM-SHA-1"")
+      0x03,                                                                                                       // BSON element type (0x03 = embedded document)
+      0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x00,                                                             // BSON element cstring field name (""options"")
+      0x19, 0x00, 0x00, 0x00,                                                                                     // Embedded BSON object size (0x00000019 = 25)
+      0x08,                                                                                                       // BSON element type (0x08 = boolean)
+      0x73, 0x6b, 0x69, 0x70, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x45, 0x78, 0x63, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x00, // BSON element cstring field name (""skipEmptyExchange"")
+      0x01,                                                                                                       // BSON element value (""true"") 
+      0x00,                                                                                                       // Embedded BSON object end byte (0x00)
+      0x05,                                                                                                       // BSON element type (0x05 = binary data)
+      0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x00,                                                             // BSON element cstring field name (""payload"")
+      0x2c, 0x00, 0x00, 0x00,                                                                                     // Binary data size (0x0000002c = 44)
+      0x00,                                                                                                       // Binary data subtype (0x00 = 0)
+      0x6e, 0x2c, 0x2c, 0x6e, 0x3d, 0x75, 0x73, 0x65, 0x72, 0x2c, 0x72, 0x3d, 0x5a, 0x6a, 0x39, 0x76, 0x41, 0x57, // BSON element value (binary data)
+      0x61, 0x41, 0x66, 0x65, 0x43, 0x56, 0x46, 0x42, 0x47, 0x45, 0x4e, 0x53, 0x32, 0x47, 0x74, 0x62, 0x76, 0x57, // ...
+      0x64, 0x41, 0x36, 0x73, 0x32, 0x2b, 0x68, 0x6f,                                                             // ...
+      0x02,                                                                                                       // BSON element type (0x02 = UTF-8 string)
+      0x24, 0x64, 0x62, 0x00,                                                                                     // BSON element cstring field name (""$db"")
+      0x06, 0x00, 0x00, 0x00, 0x61, 0x64, 0x6d, 0x69, 0x6e, 0x00,                                                 // BSON element value (""admin"")
+      0x00,                                                                                                       // BSON object end byte (0x00)
+      0x20, 0x3c, 0x28, 0xb5                                                                                      // CRC-32C checksum
+  };
+  // clang-format on
+{code}
+h4. Environment
+
+We are using version {{1.23.1}} of the C driver.
+
+Host OS is Linux ip-10-122-15-28 5.4.0-1093-aws #102~18.04.2-Ubuntu SMP Wed Dec 7 00:31:59 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux.
+h4. How to Reproduce
+
+See buffer attached above.",Bug,Serverless Proxy,,Related:CDRIVER-4617|Related:CDRIVER-4630
+59,NODE-6126,https://jira.mongodb.org/browse/NODE-6126,not_relevant,,high,"Performance, build, packaging, or doc-related.",not_relevant,,Improve performance of Long.fromBigInt,"h3. Use Case
+
+As a BSON user
+I want Long.fromBigInt to be performant
+So that I can efficiently translate to the Long type
+h3. User Impact
+ * Any user using Long.fromBigInt
+
+h3. Dependencies
+ * None
+
+h3. Unknowns
+ * Is there a performance difference between bigint literals and {{BigInt(number)}}
+
+h3. Acceptance Criteria
+h4. Implementation Requirements
+ * Remove stringifying to translate BigInt to Long
+ * Replace with bitwise operations that separate the high and low 32 bits and call the Long constructor.
+
+h4. Testing Requirements
+ * Existing tests
+ * Manually check performance improvements
+
+h4. Documentation Requirements
+ * None
+
+h4. Follow Up Requirements
+ * None",Improvement,BSON|Performance,node-internal,
+60,JAVA-489,https://jira.mongodb.org/browse/JAVA-489,not_relevant,cursors,medium,,driver_spec_nonconformance,,Add DBCursor.count(boolean foundOnly),"At this moment it's impossible to get the number of results with skip and limit applied:
+http://api.mongodb.org/java/2.7.0/com/mongodb/DBCursor.html#count()
+
+At the same time [PHP|http://www.php.net/manual/en/mongocursor.count.php] and [Python|http://api.mongodb.org/python/2.0.1/api/pymongo/cursor.html#pymongo.cursor.Cursor.count] have this ability.",Improvement,,,
+61,CDRIVER-3575,https://jira.mongodb.org/browse/CDRIVER-3575,cross_driver_inconsistency,write-concern,high,Cross-driver inconsistency in write-concern.,not_relevant,,"Ensure that the WriteConcernError ""errInfo"" object is propagated",See DRIVERS-967 for details.,Improvement,,,Depends:DRIVERS-967
+62,RUBY-2976,https://jira.mongodb.org/browse/RUBY-2976,driver_spec_nonconformance,crud,high,CRUD spec requires error for empty bulk write operation list,driver_spec_nonconformance,,Raise an error on empty list of operations to BulkWrite,"Currently, the Ruby Driver allows applications to send the empty list to the Bulk Write operation. The spec states that drivers should raise an error in this case. 
+https://github.com/mongodb/specifications/blob/master/source/crud/crud.rst#insert-update-replace-delete-and-bulk-writes",Improvement,Spec Comp,,Related:RUBY-3087
+63,NODE-3881,https://jira.mongodb.org/browse/NODE-3881,cross_driver_inconsistency,none,medium,References another driver behavior or linked ticket,not_relevant,,Require hello command + OP_MSG when 'loadBalanced=True',"This ticket was split from {{{}DRIVERS-2033{}}}, please see that ticket for a detailed description.
+h3. *Acceptance Criteria*
+
+**
+
+*Implementation Requirements*
+When performing an initial handshake send the hello command instead of the legacy hello command if loadBalanced option is specified. Also send command OP_MSG instead of OP_QUERY.
+
+*Testing Requirements*
+ - prepareHandshakeDocument sets the hello parameter to 1 when loadBalanced is true
+ - prepareHandshakeDocument sets the legacy hello parameter to 1 when serverApi and loadBalanced are not present
+ - add a unit test for a load-balanced to verify that the first command is sent as OP_MSG 
+ - add a unit test for a not load-balanced to verify that the first command is sent as OP_QUERY 
+
+*Documentation Requirements*
+None
+
+*Follow Up Requirements*
+None",Improvement,,prioritized|spec-compliance,Issue split:DRIVERS-2033|Related:CLOUDP-194714
+64,CSHARP-1589,https://jira.mongodb.org/browse/CSHARP-1589,avoidable_by_spec_conformance,crud,low,"spec area bug, prevention unclear",not_relevant,,OfType doesn't work for an embedded array.,"please find method which calls to get people entries with casting to derived class object
+
+
+
+var people = database.GetDatabase(""Test"") .GetCollection<Person>(""People"").AsQueryable();
+            var x = people.Where(z => z.Addresses.OfType<Email>().Any(e => e.MailTo == ""not@home.com""));
+ throws an exception:
+""The method OfType is not supported in the expression tree: {document}{Addresses}.OfType().""
+
+class Person
+        {
+            public List<Address> Addresses { get; set; }
+        }
+        class Address
+        {
+        }
+        class Phone : Address
+        {
+            public string Number { get; set; }
+        }
+        class Email : Address
+        {
+            public string MailTo { get; set; }
+        }
+            ",Bug,API,driver,
+65,CDRIVER-927,https://jira.mongodb.org/browse/CDRIVER-927,avoidable_by_spec_conformance,bson,low,Touches spec area but lacks clear nonconformance.,not_relevant,,"libbson streaming writer docs are unclear, perhaps misleading","I'm trying to use libbson's streaming interface to write a sequence of records as described in [this StackOverflow question|http://stackoverflow.com/questions/33025818/how-to-use-libbson-streaming-writer-t-interface-to-write-bson-with-list-of-recor].  The streaming docs say the following:
+
+{quote}
+Libbson provides mechanisms to stream BSON documents to and from file-descriptors. This can be convenient if you want to do stream oriented processing.
+{quote}
+
+I do see that the reader interface, via {{bson_reader_new_from_file}}, does allow for reading from a file, but I see no similar interface for writing to a file as the docs suggest.
+
+My code sample in the SO question shows some working code for writing from the {{bson_writer_t}}'s buffer, but when dealing with an arbitrary number of sub-documents, this would mean I'd have to use one writer for the entire parent document, meaning the buffer can grow arbitrarily large and undermine the whole point of streaming.
+
+Are there plans to add file writing support directly to the {{bson_writer}} interface as the docs seem to indicate, and if so, would this kind of incremental writing of documents be supported?  This seems like a basic requirement for anyone who wants to emit larger documents with nested sub-documents.",Bug,Docs|libbson,,
+66,RUBY-1987,https://jira.mongodb.org/browse/RUBY-1987,avoidable_by_spec_conformance,command-monitoring|cursors,medium,Bug in command-monitoring,driver_spec_nonconformance,,No command monitoring events for getMore on 2.6 server,"It appears that when running against a 2.6 server, using OP_GET_MORE op codes, the driver does not surface any command monitoring events for the getMore operations that are being sent.
+
+https://github.com/mongodb/specifications/blob/master/source/find_getmore_killcursors_commands.rst says getMore command was added in 3.2, therefore I expect this issue to affect 2.6 and 3.0 servers.",Bug,,,Related:RUBY-1980
+67,CSHARP-3428,https://jira.mongodb.org/browse/CSHARP-3428,cross_driver_inconsistency,,low,Default rationale,not_relevant,,Week start parameter for $dateDiff aggregation expression,,Improvement,LINQ,,Depends:DRIVERS-1559|Related:CSHARP-3343
+68,RUBY-3062,https://jira.mongodb.org/browse/RUBY-3062,cross_driver_inconsistency,csfle,high,Links to DRIVERS-2377; GCP KMS feature alignment.,not_relevant,,Add support for GCP attached service accounts when using GCP KMS,"This ticket was split from {{DRIVERS-2377}}, please see that ticket for a detailed description. ",Improvement,Client Side Encryption,,Issue split:DRIVERS-2377
+69,CDRIVER-2134,https://jira.mongodb.org/browse/CDRIVER-2134,cross_driver_inconsistency,,medium,references behavior in another driver,not_relevant,,Coverity analysis defect 49582: Operands don't affect result,"An operation with non-constant operands that computes a result with constant value
+
+Defect 49582 (STATIC_C)
+  Checker CONSTANT_EXPRESSION_RESULT (subcategory result_independent_of_operands)
+  File:  {{/src/mongoc/mongoc-stream-gridfs.c}}
+  Function {{_mongoc_stream_gridfs_readv}}
+    /src/mongoc/mongoc-stream-gridfs.c, line: 114
+    {color:red}""timeout_msec <= 2147483647"" is always true regardless of the values of its operands. This occurs as the logical operand of ""!"".{color} 
+{code:first-line=114}
+       BSON_ASSERT (timeout_msec <= INT_MAX);
+{code}
+
+",Bug,,,Related:CDRIVER-852
+70,JAVA-1888,https://jira.mongodb.org/browse/JAVA-1888,avoidable_by_spec_conformance,sdam|crud,medium,Touches sdam.,test_infrastructure,,Update SDAM tests to latest,Update to the latest tests.,Improvement,,,
+71,PHPC-895,https://jira.mongodb.org/browse/PHPC-895,avoidable_by_spec_conformance,bson,low,Touches spec area but signal unclear.,driver_spec_nonconformance,,Require 16-byte data length for Binary UUID subtypes 0x03 and 0x04,The legacy driver [throws an exception|https://github.com/mongodb/mongo-php-driver-legacy/blob/1.6.14/types/bin_data.c#L37] from the constructor if the subtype is 0x04 and the data payload is not exactly 16 bytes.,Bug,,,Related:SWIFT-140|Related:DOCS-1543
+72,CDRIVER-1533,https://jira.mongodb.org/browse/CDRIVER-1533,cross_driver_inconsistency,,medium,References other driver behavior.,not_relevant,,mongoc_client_get_server_descriptions can return NULLs,"The 1.4.0 function mongoc_client_get_server_descriptions is supposed to return an array of server description pointers and the number of pointers, ""n"". It omits server descriptions of ""unknown"" type.
+
+But, instead of tightly packing pointers to known-type server descriptions, it instead leaves NULL pointers in the returned array. For example, if there are 2 known servers and 1 unknown server, mongoc_client_get_server_descriptions is supposed to return:
+{code}
+[known server, known server, NULL]
+n=2
+{code}
+... instead, it returns:
+{code}
+[known server, NULL, known server]
+n=2
+{code}
+This could crash the caller, which doesn't expect any NULLs. If the caller doesn't crash, it still gets incorrect results, because n=2 is supposed to mean that the first two array elements are server description pointers. If the caller gets far enough to call mongoc_server_descriptions_destroy_all, it will crash there.
+
+The unreleased new 1.5.0 function mongoc_topology_description_get_servers has the same bug.",Bug,libmongoc,,Related:CDRIVER-1091
+73,CDRIVER-6019,https://jira.mongodb.org/browse/CDRIVER-6019,not_relevant,,medium,No spec-related content identified.,not_relevant,,Improve error messages from Windows APIs,Tracks: https://github.com/mongodb/mongo-c-driver/pull/2020,Improvement,,,
+74,CSHARP-2995,https://jira.mongodb.org/browse/CSHARP-2995,cross_driver_inconsistency,,low,References another driver; insufficient detail to classify further.,not_relevant,,BsonClassMap.LookupClassMap supports private constructors inconsistently (regression),"The user's email:
+{noformat}Ello 
+After upgrading the c# mongo driver from 2.10.1 to 2.10.2, I noticed that classes that deserialised without issues suddenly stopped working, resulting in exceptions about incorrect creator maps. Has something changed with this patch?
+The class I'm deserialising has a private, parameterless constructor, and a public constructor with 4 arguments. I get the following exception since the patch:
+Creator map for class Nallian.CargoFlow.UseCase.Models.Mawb.PiecesDetail has 4 arguments, but none are configured.
+Any ideas what has gone wrong? I don't see documented changes regarding the mapping, might the change be unintended? Moving back to 2.10.1 has resolved the issue again, leading me to believe there's something with the most recent patch.
+Kind regards, Anthony{noformat}
+
+
+ 
+
+ ",Bug,Serialization,,Related:CSHARP-4112
+75,NODE-6370,https://jira.mongodb.org/browse/NODE-6370,avoidable_by_spec_conformance,cmap|crud,low,"bulkWrite hangs and connection not returned to pool, plausibly a CMAP-related bug.",avoidable_by_spec_conformance,,"bulkWrite does not resolve after update, and connection not returned to pool","Our issue has been ongoing for several versions now and have not been able to go beyond 5.9.2 version of the driver. I believe it is the same as NODE-6166 which was closed without finding the issue.
+
+We have both `find` and `bulkWrite` operations that will behave similarly. We only see the issue in production, and it occurs roughly 1 in 3,000 of our updates, and each of those updates involves 4 or 5 bulkWrite operations. We have moderately heavy load, running about ~4,000 updates per second across all nodes, which is about 40/s on each node.
+
+Seemingly randomly, those operations never return, but there is no active connection to the db server. I have viewed internals, and a connection from the connection pool is in use for each of the updates that hang. I believe the problem must be in the reading of the response on the socket, but this driver code has changed so much since 5.9.2 it is very difficult to know what it could be.
+
+We are connected to Atlas with a 3 replica cluster. No unusual activity on server shows in monitoring. Although random and rare relative to the number of updates, it is easy to reproduce when making many updates, although I have not been able to reproduce locally with simulated load testing.
+
+The server is running v5.",Bug,Connection Layer,external-user,Related:NODE-6166
+76,JAVA-3487,https://jira.mongodb.org/browse/JAVA-3487,driver_spec_nonconformance,change-streams|command-monitoring|crud|cursors|sessions,low,Spec area: change-streams,not_relevant,,com.mongodb.MongoException: state should be: open when closing an change stream,"When running this small main method i get an exception
+
+ 
+{code:java}
+public static void main(String[] args) throws InterruptedException {	
+         MongoClient mongoClient = MongoClients.create(""mongodb://localhost"");
+	MongoDatabase db = mongoClient.getDatabase(""import"");
+	MongoCollection<Document> gameEntityCollection = db.getCollection(""gameEnitites"");
+	gameEntityCollection.watch().subscribe(new Subscriber<ChangeStreamDocument<Document>>() {		@Override
+		public void onSubscribe(Subscription s) {
+			s.request(1);
+			new Thread(() -> {
+				try {
+					Thread.sleep(100);
+					s.cancel();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}).start();
+		}		@Override
+		public void onNext(ChangeStreamDocument<Document> t) {
+		}		@Override
+		public void onError(Throwable t) {
+		}		@Override
+		public void onComplete() {
+		}
+	});	Thread.sleep(10000);
+}
+{code}
+
+{code}
+com.mongodb.MongoException: state should be: open
+	at com.mongodb.MongoException.fromThrowableNonNull(MongoException.java:79)
+	at com.mongodb.async.client.AbstractSubscription.onError(AbstractSubscription.java:135)
+	at com.mongodb.async.client.MongoIterableSubscription$2.onResult(MongoIterableSubscription.java:93)
+	at com.mongodb.async.client.MongoIterableSubscription$2.onResult(MongoIterableSubscription.java:85)
+	at com.mongodb.operation.AsyncChangeStreamBatchCursor$3.onResult(AsyncChangeStreamBatchCursor.java:133)
+	at com.mongodb.operation.AsyncChangeStreamBatchCursor$3.onResult(AsyncChangeStreamBatchCursor.java:129)
+	at com.mongodb.internal.async.ErrorHandlingResultCallback.onResult(ErrorHandlingResultCallback.java:49)
+	at com.mongodb.operation.AsyncChangeStreamBatchCursor$4.onResult(AsyncChangeStreamBatchCursor.java:168)
+	at com.mongodb.operation.AsyncChangeStreamBatchCursor$4.onResult(AsyncChangeStreamBatchCursor.java:159)
+	at com.mongodb.internal.async.ErrorHandlingResultCallback.onResult(ErrorHandlingResultCallback.java:49)
+	at com.mongodb.operation.AsyncQueryBatchCursor$CommandResultSingleResultCallback.onResult(AsyncQueryBatchCursor.java:331)
+	at com.mongodb.operation.AsyncQueryBatchCursor$CommandResultSingleResultCallback.onResult(AsyncQueryBatchCursor.java:310)
+	at com.mongodb.internal.async.ErrorHandlingResultCallback.onResult(ErrorHandlingResultCallback.java:49)
+	at com.mongodb.internal.connection.DefaultServer$DefaultServerProtocolExecutor$2.onResult(DefaultServer.java:242)
+	at com.mongodb.internal.async.ErrorHandlingResultCallback.onResult(ErrorHandlingResultCallback.java:49)
+	at com.mongodb.internal.connection.CommandProtocolImpl$1.onResult(CommandProtocolImpl.java:83)
+	at com.mongodb.internal.connection.DefaultConnectionPool$PooledConnection$1.onResult(DefaultConnectionPool.java:467)
+	at com.mongodb.internal.connection.UsageTrackingInternalConnection$2.onResult(UsageTrackingInternalConnection.java:111)
+	at com.mongodb.internal.async.ErrorHandlingResultCallback.onResult(ErrorHandlingResultCallback.java:49)
+	at com.mongodb.internal.connection.InternalStreamConnection$2$1.onResult(InternalStreamConnection.java:401)
+	at com.mongodb.internal.connection.InternalStreamConnection$2$1.onResult(InternalStreamConnection.java:376)
+	at com.mongodb.internal.connection.InternalStreamConnection$MessageHeaderCallback$MessageCallback.onResult(InternalStreamConnection.java:677)
+	at com.mongodb.internal.connection.InternalStreamConnection$MessageHeaderCallback$MessageCallback.onResult(InternalStreamConnection.java:644)
+	at com.mongodb.internal.connection.InternalStreamConnection$5.completed(InternalStreamConnection.java:514)
+	at com.mongodb.internal.connection.InternalStreamConnection$5.completed(InternalStreamConnection.java:511)
+	at com.mongodb.internal.connection.AsynchronousChannelStream$BasicCompletionHandler.completed(AsynchronousChannelStream.java:220)
+	at com.mongodb.internal.connection.AsynchronousChannelStream$BasicCompletionHandler.completed(AsynchronousChannelStream.java:203)
+	at java.base/sun.nio.ch.Invoker.invokeUnchecked(Invoker.java:127)
+	at java.base/sun.nio.ch.Invoker.invokeUnchecked(Invoker.java:282)
+	at java.base/sun.nio.ch.WindowsAsynchronousSocketChannelImpl$ReadTask.completed(WindowsAsynchronousSocketChannelImpl.java:581)
+	at java.base/sun.nio.ch.Iocp$EventHandlerTask.run(Iocp.java:387)
+	at java.base/sun.nio.ch.AsynchronousChannelGroupImpl$1.run(AsynchronousChannelGroupImpl.java:112)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1128)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
+	at java.base/java.lang.Thread.run(Thread.java:835)
+Caused by: java.lang.IllegalStateException: state should be: open
+	at com.mongodb.assertions.Assertions.isTrue(Assertions.java:70)
+	at com.mongodb.internal.session.BaseClientSessionImpl.advanceOperationTime(BaseClientSessionImpl.java:107)
+	at com.mongodb.internal.session.ClientSessionContext.advanceOperationTime(ClientSessionContext.java:70)
+	at com.mongodb.internal.connection.ClusterClockAdvancingSessionContext.advanceOperationTime(ClusterClockAdvancingSessionContext.java:76)
+	at com.mongodb.internal.connection.InternalStreamConnection.updateSessionContext(InternalStreamConnection.java:537)
+	at com.mongodb.internal.connection.InternalStreamConnection.access$800(InternalStreamConnection.java:76)
+	at com.mongodb.internal.connection.InternalStreamConnection$2$1.onResult(InternalStreamConnection.java:385)
+	... 15 common frames omitted
+{code}
+
+it seem to occour when in `AsyncChangeStreamBatchCursor.close` 
+`wrapped.close();` and `binding.release();` is called to fast one after the other. When i wait a bit with my debugger on `wrapped.close();` and then resume the exception does not occour.",Bug,API,,Related:JAVA-3938
+77,JAVA-5901,https://jira.mongodb.org/browse/JAVA-5901,avoidable_by_spec_conformance,wire-protocol,medium,ByteBuf.release() timing issue with Netty and GC.,not_relevant,,LEAK : ByteBuf.release was not called,"under mongo-java-driver : 5.5.1, netty : 4.1.122-FINAL, jdk24 + ZGC
+i can see such an error like below from time to time.
+as i see, i can be timing issue.
+for normal state, ByteBuf is read completely -> released -> GC collects
+however, sometimes ByteBuf is read completely -> GC collects > released : this is ERROR!
+can i get any suggestion or advice?
+
+[related linkl|https://github.com/netty/netty/issues/15388]
+
+{code}
+
+LEAK: ByteBuf.release() was not called before it's garbage-collected. See https://netty.io/wiki/reference-counted-objects.html for more information.
+Recent access records: 
+Created at:
+    io.netty.buffer.AbstractByteBufAllocator.compositeDirectBuffer(AbstractByteBufAllocator.java:224)
+    io.netty.buffer.AbstractByteBufAllocator.compositeBuffer(AbstractByteBufAllocator.java:202)
+    com.mongodb.internal.connection.netty.NettyStream.readAsync(NettyStream.java:301)
+    com.mongodb.internal.connection.netty.NettyStream.handleReadResponse(NettyStream.java:361)
+    com.mongodb.internal.connection.netty.NettyStream.access$900(NettyStream.java:115)
+    com.mongodb.internal.connection.netty.NettyStream$InboundBufferHandler.channelRead0(NettyStream.java:437)
+    com.mongodb.internal.connection.netty.NettyStream$InboundBufferHandler.channelRead0(NettyStream.java:434)
+    io.netty.channel.SimpleChannelInboundHandler.channelRead(SimpleChannelInboundHandler.java:99)
+    io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:444)
+    io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
+    io.netty.channel.AbstractChannelHandlerContext.fireChannelRead(AbstractChannelHandlerContext.java:412)
+    io.netty.channel.DefaultChannelPipeline$HeadContext.channelRead(DefaultChannelPipeline.java:1357)
+    io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:440)
+    io.netty.channel.AbstractChannelHandlerContext.invokeChannelRead(AbstractChannelHandlerContext.java:420)
+    io.netty.channel.DefaultChannelPipeline.fireChannelRead(DefaultChannelPipeline.java:868)
+    io.netty.channel.nio.AbstractNioByteChannel$NioByteUnsafe.read(AbstractNioByteChannel.java:166)
+    io.netty.channel.nio.NioEventLoop.processSelectedKey(NioEventLoop.java:796)
+    io.netty.channel.nio.NioEventLoop.processSelectedKeysOptimized(NioEventLoop.java:732)
+    io.netty.channel.nio.NioEventLoop.processSelectedKeys(NioEventLoop.java:658)
+    io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:562)
+    io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:998)
+    io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+    io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+    java.base/java.lang.Thread.run(Unknown Source)
+
+{code}",Bug,Wire Protocol,,Problem/Incident:JAVA-6107|Related:JAVA-6038|Related:JAVA-6027|Related:JAVA-5982
+78,PYTHON-834,https://jira.mongodb.org/browse/PYTHON-834,not_relevant,,medium,Not about spec conformance,not_relevant,,option to disable hostname validation during CA validation,"There are circumstances where you still require a CA to validate that your key and cert are valid, but forgo verifying that the hostname matches the CN.
+
+This is already done in TxMongo which uses Twisted's SSL Context Factory to achieve the same thing.
+
+Example of use-case (outside of MongoDB):
+http://www.symantec.com/business/support/index?page=content&id=TECH141351",Improvement,,,
+79,GODRIVER-2565,https://jira.mongodb.org/browse/GODRIVER-2565,not_relevant,,low,Insufficient detail to classify.,driver_spec_nonconformance,,Context cancelation before transaction commit does not abort,"The title of this ticket is my best guess at what's happening in the following situation :). (This came from [this slack conversation|https://mongodb.slack.com/archives/C7WJZNUTA/p1664474654586019]). See the attached test; occasionally, the test will loop continuously in the second transaction as the first transaction has not properly aborted its identical write server-side. I believe this is because we do not run {{AbortTransaction}} correctly when {{CommitTransaction}} encounters a context cancelation, but I'm not exactly sure. This requires further investigation and even if the aforementioned theory is correct, we need a more consistent regression test.",Bug,,,Problem/Incident:BAAS-17083|Related:DRIVERS-2471|Related:GODRIVER-2997
+80,JAVA-5408,https://jira.mongodb.org/browse/JAVA-5408,not_relevant,connection-string|logging,medium,CI/infrastructure,not_relevant,,Remove GraalVM reachability metadata specific to org.mongodb:mongodb-crypt from :driver-core,"When {{org.mongodb:mongodb-crypt}} with the changes made in JAVA-5407 is released, and MongoDB Java driver depends on that new version, we should remove the reachability metadata that was added in JAVA-5407 to {{org.mongodb:mongodb-crypt}} from {{:driver-core}} (for example, the whole {{driver-core/src/main/resources/META-INF/native-image/jni-config.json}} was copied to {{org.mongodb:mongodb-crypt}} and should be removed from {{:driver-core}}).
+
+*Important*: despite the following metadata entries having been added to {{bindings/java/mongocrypt/src/main/resources/META-INF/native-image/reflect-config.json}} in {{org.mongodb:mongodb-crypt}}, they must remain in {{:driver-core}}, because they are also used by {{:driver-core}}
+{noformat}
+{
+  ""name"":""sun.security.provider.NativePRNG"",
+  ""methods"":[{""name"":""<init>"",""parameterTypes"":[] }, {""name"":""<init>"",""parameterTypes"":[""java.security.SecureRandomParameters""] }]
+}
+{noformat}
+{noformat}
+{
+  ""name"":""org.slf4j.Logger""
+}
+{noformat}",Improvement,GraalVM,,Depends:JAVA-5407|Gantt End to End:JAVA-5219|Related:JAVA-3537
