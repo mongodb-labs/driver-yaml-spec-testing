@@ -50,29 +50,16 @@ Listed roughly in order of effort-to-payoff. Aim for 3--4 of these by the July 5
 
 ### A. Bug-class taxonomy from issue tracker mining (high payoff, addresses Reviewers A/B/C #1)
 
-Mine MongoDB driver issue trackers (Jira projects per language: PYTHON, GODRIVER, NODE, JAVA, CSHARP, RUST, etc.) and GitHub PRs from the past ~5 years. For each closed bug, classify:
-- **Caught by UTF test failure** (PR fixes a bug *and* touches a YAML file or references a spec test failure)
-- **Caught by driver-local test** (no YAML touched)
-- **Escaped to user** (filed by external reporter)
-- **In a UTF-covered spec area** (CRUD, transactions, retryable reads/writes, sessions, change streams, CSFLE) **vs. not** (BSON, SDAM, connection string parsing).
+Once we implemented driver spec tests in YAML (both the Unified Test Format and other formats), individual drivers gradually implemented test runners and adopted the tests. Once a test runner was implemented, driver authors no longer checked in versions that failed any tests. Test failures could still sometimes occur when a driver author synced new YAML tests from the specs repo: the sync and the fix was generally checked in simultaneously.
 
-Headline numbers we hope to produce:
-- Fraction of cross-driver-consistency bugs caught by UTF before release.
-- Bug rate per kLOC in UTF-covered spec areas vs non-UTF-covered, controlling for area maturity.
-- 2--3 narrative case studies of bugs UTF caught in driver X *because* the same YAML failed in driver Y first.
+Your task is to mine the MongoDB driver issue trackers (Jira projects per language: PYTHON, GODRIVER, NODE, JAVA, CSHARP, RUST, etc.) from the beginning of time. Use the list of drivers mentioned in the paper. Create a CSV of bugs. For each bug, classify:
 
-Risk: requires labeled data we don't have. Could be sampled (e.g. random 200 closed bugs, hand-classify) rather than exhaustive.
-
-### B. API consistency across drivers (novel, addresses Reviewer C #1, supports "enforces consistency" claim)
-
-The paper claims UTF enforces cross-driver consistency. We can *measure* this. For each driver:
-- Extract method names, parameter names, parameter order, parameter types from public API surface (use language-specific introspection or doc-extraction tooling: `pydoc`, `godoc`, javadoc, etc.).
-- For each spec area, compute pairwise consistency between drivers (normalized edit distance over the API symbol set; or Jaccard over canonicalized signatures).
-- Compare consistency in **UTF-covered areas vs non-covered areas**. Hypothesis: UTF-covered APIs are measurably more consistent across drivers.
-
-Bonus: track API consistency *over time* (per release) for one or two specs --- show consistency improved after UTF adoption for that spec.
-
-This is the most novel angle and directly answers "does UTF actually enforce conformance?" with a number.
+- Resolution (fixed, open, works as designed, etc.)
+- Relevant to which specs in the driver specs repo, if any? (https://specifications.readthedocs.io/en/latest/)
+- Is it a nonconformance bug between the driver and a spec or specs?
+- Does the bug description or comments say explicitly that it's an inconsistency between this driver and another driver or drivers?
+- Did it predate the YAML tests for those specs?
+- Could it have been prevented by a YAML test? (Delegate a subagent to search for related specific test files in the latest specs repo, and associate those files with the bug.)
 
 ### C. Test-asset amplification factor (cheap, vivid)
 

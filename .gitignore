@@ -4,6 +4,8 @@
 __pycache__/
 *.pyc
 analysis/data/tickets/
+analysis/data/chunks/
+analysis/data/specifications/
 analysis/data/pull.log
 *.pat
 .env

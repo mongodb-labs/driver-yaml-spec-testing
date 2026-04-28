@@ -42,7 +42,7 @@ For each ticket, choose **exactly one** primary category. Be conservative: if th
 
 - `cross_driver_inconsistency` --- The ticket explicitly references behavior in another driver, or implies "driver X does this but driver Y doesn't"; a fix to align with peer drivers; a divergence detected by spec test failures or by user reports of inconsistent behavior across languages.
 
-- `avoidable_by_spec_conformance` --- A driver-internal bug in a component (connection pool, topology monitor, auth, retry logic, etc.) that **plausibly would have been avoided or caught earlier** if the driver had been more rigorously conformant to the relevant spec, or if a more carefully designed spec had existed. Example: a custom connection-pool implementation has a subtle deadlock that CMAP-conformant drivers would have caught earlier via shared CMAP spec tests. Use when the bug is in a *component* covered by a spec, even if the ticket doesn't mention the spec explicitly. This category is broader than `driver_spec_nonconformance`: the bug doesn't have to be a literal spec violation, just plausibly preventable by stronger spec discipline.
+- `avoidable_by_spec_conformance` --- A driver-internal bug in a component (connection pool, topology monitor, auth, retry logic, etc.) that **plausibly would have been avoided or caught earlier** if the driver had been more rigorously conformant to the relevant spec, or if a more carefully designed spec had existed. Example: a custom connection-pool implementation has a subtle deadlock that CMAP-conformant drivers would have caught earlier via shared CMAP spec tests. Use when the bug is in a *component* covered by a spec, even if the ticket doesn't mention the spec explicitly. This category is broader than `driver_spec_nonconformance`: the bug doesn't have to be a literal spec violation, just plausibly preventable by stronger spec discipline. We're particularly interested in old bugs that predate the relevant spec(s), which wouldn't have been released had there been specs and YAML tests. 
 
 - `spec_ambiguity_or_gap` --- A bug whose root cause is the spec itself --- it was ambiguous, silent on this case, or wrong; the fix involved amending the spec (or this ticket links to a DRIVERS or SPEC ticket that did so). Includes "common-mode failures" where multiple drivers implemented the spec the same wrong way.
 
@@ -54,7 +54,7 @@ For each ticket, choose **exactly one** primary category. Be conservative: if th
 
 # Spec area
 
-If the ticket touches a spec area, name it. Use one of the spec names listed above (lowercased, hyphen-separated, e.g. `cmap`, `sdam`, `retryable-writes`, `transactions`, `command-monitoring`, `csfle`, `connection-string`, `bson`, `crud`, `change-streams`, `sessions`, `causal-consistency`, `auth`, `auth-oidc`, `auth-aws`, `auth-scram`, `stable-api`, `gridfs`, `compression`, `load-balancer`, `ocsp`, `logging`, `opentelemetry`, `read-concern`, `write-concern`, `server-selection`, `dns-seedlist`, `wire-protocol`, `index-management`, `collation`, `cursors`). If no spec area applies (or you classified as `not_relevant` / `test_infrastructure`), use `none`. If unclear, your best single guess.
+If the ticket touches a spec area(s), name them. Use the spec names listed above (lowercased, hyphen-separated, e.g. `cmap`, `sdam`, `retryable-writes`, `transactions`, `command-monitoring`, `csfle`, `connection-string`, `bson`, `crud`, `change-streams`, `sessions`, `causal-consistency`, `auth`, `auth-oidc`, `auth-aws`, `auth-scram`, `stable-api`, `gridfs`, `compression`, `load-balancer`, `ocsp`, `logging`, `opentelemetry`, `read-concern`, `write-concern`, `server-selection`, `dns-seedlist`, `wire-protocol`, `index-management`, `collation`, `cursors`). If no spec area applies (or you classified as `not_relevant` / `test_infrastructure`), use `none`.
 
 # Cross-driver evidence
 
@@ -64,12 +64,17 @@ Set `mentions_other_driver: true` if the summary or description names another dr
 
 Give a confidence in your classification: `high`, `medium`, or `low`. Use `low` when the description is very thin or the signal is weak. Default to `medium`.
 
+# Additional flags
+
+- `is_nonconformance` --- true if the ticket describes a literal deviation from a published spec (driver did X, spec said Y). Distinct from `category`: a ticket can be `cross_driver_inconsistency` and also a nonconformance.
+- `preventable_by_yaml_test` --- true if a YAML/UTF spec test could *plausibly* have caught this bug before release. False for things UTF cannot test by construction (build/packaging, perf, language ergonomics, internal refactors). Use `unsure` if the bug touches a spec area but the failure mode is hard to express as a YAML assertion.
+
 # Output format
 
 Output **only** a single JSON object on one line, with no markdown fence, no preamble, no explanation outside the JSON. Keys exactly:
 
 ```
-{"category": "...", "spec_area": "...", "mentions_other_driver": true|false, "confidence": "high|medium|low", "rationale": "<one short sentence, max 25 words>"}
+{"key": "<TICKET-KEY>", "category": "...", "spec_areas": ["...", "..."], "is_nonconformance": true|false, "mentions_other_driver": true|false, "preventable_by_yaml_test": true|false|"unsure", "confidence": "high|medium|low", "rationale": "<one short sentence, max 25 words>"}
 ```
 
-The rationale must cite the specific signal you used (a phrase from the summary/description, or a linked ticket key). Do not speculate. If the ticket is too thin to classify, choose `not_relevant` with `confidence: low` and rationale `insufficient detail`.
+`spec_areas` is a JSON array (use `[]` if none). `key` must echo the ticket's Jira key exactly. The rationale must cite the specific signal you used (a phrase from the summary/description, or a linked ticket key). Do not speculate. If the ticket is too thin to classify, choose `not_relevant` with `confidence: low` and rationale `insufficient detail`.
