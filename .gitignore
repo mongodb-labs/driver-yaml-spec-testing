@@ -1,2 +1,9 @@
 .idea/
 .DS_Store
+.venv/
+__pycache__/
+*.pyc
+analysis/data/tickets/
+analysis/data/pull.log
+*.pat
+.env
