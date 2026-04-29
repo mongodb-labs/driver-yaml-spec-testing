@@ -40,6 +40,8 @@ The driver implemented a spec area **incorrectly**. The spec says X; the driver 
 
 **Not this:** A performance bug, memory leak, or internal implementation detail that doesn't contradict a specific spec requirement → `not_relevant`. A systemic architectural flaw in a spec-covered component (pool leak, topology resource leak) that doesn't correspond to a specific spec rule → `not_relevant`.
 
+**Gate for N:** Before classifying as `driver_spec_nonconformance`, ask: *Can I name the specific rule in the spec that the driver violated?* If yes, N. If you can only say "this is in a spec-covered area" or "the spec probably covers this," classify as `not_relevant` instead.
+
 ---
 
 ### `cross_driver_inconsistency`
