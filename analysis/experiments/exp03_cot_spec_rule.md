@@ -85,19 +85,17 @@ Everything else: build/packaging, CI failures, doc typos, dependency bumps, perf
 
 # Decision guide for common pitfalls
 
-1. **"Issue split: DRIVERS-XXXX" in links + `issuetype: Improvement`** → `not_relevant`. This is proactive spec-rollout work: the DRIVERS project coordinates a new requirement and each driver gets a child ticket to implement it. The driver was not doing anything *wrong*; the spec just added a new requirement. Not a nonconformance bug. (If the issuetype is Bug and the driver had wrong existing behavior, it may still be N.)
+1. **"Issue split: DRIVERS-XXXX" in links** → almost always `test_infrastructure` (spec test rollout child ticket) or `driver_spec_nonconformance` (driver fixing per-spec). Never `cross_driver_inconsistency` just because of this link.
 
-2. **"Issue split: DRIVERS-XXXX" in links + `issuetype: Bug`** → likely `test_infrastructure` (spec test rollout) or `driver_spec_nonconformance` (driver had wrong behavior). Read the description to decide.
+2. **"Related: [other-driver-ticket]" in links** → not sufficient for X. Read the prose. If the prose doesn't say "Driver A does X but Driver B does Y," it's not X.
 
-3. **"Related: [other-driver-ticket]" in links** → not sufficient for X. Read the prose. If the prose doesn't say "Driver A does X but Driver B does Y," it's not X.
+3. **Ticket mentions another driver by name** → not automatically X. If the ticket is about the filing driver's own spec compliance, it's N even if another driver is mentioned for comparison.
 
-4. **Ticket mentions another driver by name** → not automatically X. If the ticket is about the filing driver's own spec compliance, it's N even if another driver is mentioned for comparison.
+4. **Bug is in a spec-covered component** → not automatically N. Memory leaks, perf issues, CI failures, and docs bugs in spec-covered components are still `not_relevant` unless the bug contradicts a specific spec rule.
 
-5. **Bug is in a spec-covered component** → not automatically N. Memory leaks, perf issues, CI failures, and docs bugs in spec-covered components are still `not_relevant` unless the bug contradicts a specific spec rule.
+5. **Ticket uses spec terminology** → not automatically N. Check whether the bug is a literal deviation from the spec. If the spec doesn't say anything about this behavior, it might be `not_relevant`.
 
-6. **Ticket uses spec terminology** → not automatically N. Check whether the bug is a literal deviation from the spec. If the spec doesn't say anything about this behavior, it might be `not_relevant`.
-
-7. **Thin description** → classify as `not_relevant` with `confidence: low`, not as a spec category. Don't speculate.
+6. **Thin description** → classify as `not_relevant` with `confidence: low`, not as a spec category. Don't speculate.
 
 ---
 
@@ -135,10 +133,12 @@ Default to `medium`.
 
 # Output format
 
+For `driver_spec_nonconformance` tickets, fill `spec_rule` with a short quote or paraphrase of the specific spec rule violated (e.g. "Sessions spec: clusterTime gossip must use the greater of the two values"). This forces you to ground your N classifications in a specific rule. For all other categories, leave `spec_rule` as an empty string.
+
 Output **only** a single JSON object on one line, no markdown fence, no preamble, no explanation outside the JSON:
 
 ```
-{"key": "<TICKET-KEY>", "category": "...", "spec_areas": ["...", "..."], "is_nonconformance": true|false, "mentions_other_driver": true|false, "preventable_by_yaml_test": true|false|"unsure", "confidence": "high|medium|low", "rationale": "<max 25 words citing the specific phrase or evidence you used>"}
+{"key": "<TICKET-KEY>", "spec_rule": "<for driver_spec_nonconformance only: quote or paraphrase the specific spec rule violated; else empty string>", "category": "...", "spec_areas": ["...", "..."], "is_nonconformance": true|false, "mentions_other_driver": true|false, "preventable_by_yaml_test": true|false|"unsure", "confidence": "high|medium|low", "rationale": "<max 25 words citing the specific phrase or evidence you used>"}
 ```
 
 `spec_areas` is a JSON array (use `[]` if none). `key` must echo the ticket's Jira key exactly. If the ticket is too thin to classify, use `not_relevant` with `confidence: low` and rationale `insufficient detail`.

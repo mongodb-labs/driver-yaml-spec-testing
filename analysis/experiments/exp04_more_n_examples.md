@@ -85,19 +85,17 @@ Everything else: build/packaging, CI failures, doc typos, dependency bumps, perf
 
 # Decision guide for common pitfalls
 
-1. **"Issue split: DRIVERS-XXXX" in links + `issuetype: Improvement`** → `not_relevant`. This is proactive spec-rollout work: the DRIVERS project coordinates a new requirement and each driver gets a child ticket to implement it. The driver was not doing anything *wrong*; the spec just added a new requirement. Not a nonconformance bug. (If the issuetype is Bug and the driver had wrong existing behavior, it may still be N.)
+1. **"Issue split: DRIVERS-XXXX" in links** → almost always `test_infrastructure` (spec test rollout child ticket) or `driver_spec_nonconformance` (driver fixing per-spec). Never `cross_driver_inconsistency` just because of this link.
 
-2. **"Issue split: DRIVERS-XXXX" in links + `issuetype: Bug`** → likely `test_infrastructure` (spec test rollout) or `driver_spec_nonconformance` (driver had wrong behavior). Read the description to decide.
+2. **"Related: [other-driver-ticket]" in links** → not sufficient for X. Read the prose. If the prose doesn't say "Driver A does X but Driver B does Y," it's not X.
 
-3. **"Related: [other-driver-ticket]" in links** → not sufficient for X. Read the prose. If the prose doesn't say "Driver A does X but Driver B does Y," it's not X.
+3. **Ticket mentions another driver by name** → not automatically X. If the ticket is about the filing driver's own spec compliance, it's N even if another driver is mentioned for comparison.
 
-4. **Ticket mentions another driver by name** → not automatically X. If the ticket is about the filing driver's own spec compliance, it's N even if another driver is mentioned for comparison.
+4. **Bug is in a spec-covered component** → not automatically N. Memory leaks, perf issues, CI failures, and docs bugs in spec-covered components are still `not_relevant` unless the bug contradicts a specific spec rule.
 
-5. **Bug is in a spec-covered component** → not automatically N. Memory leaks, perf issues, CI failures, and docs bugs in spec-covered components are still `not_relevant` unless the bug contradicts a specific spec rule.
+5. **Ticket uses spec terminology** → not automatically N. Check whether the bug is a literal deviation from the spec. If the spec doesn't say anything about this behavior, it might be `not_relevant`.
 
-6. **Ticket uses spec terminology** → not automatically N. Check whether the bug is a literal deviation from the spec. If the spec doesn't say anything about this behavior, it might be `not_relevant`.
-
-7. **Thin description** → classify as `not_relevant` with `confidence: low`, not as a spec category. Don't speculate.
+6. **Thin description** → classify as `not_relevant` with `confidence: low`, not as a spec category. Don't speculate.
 
 ---
 
@@ -259,4 +257,48 @@ Links: (none)
 
 ```json
 {"key": "PHPC-522", "category": "not_relevant", "spec_areas": [], "is_nonconformance": false, "mentions_other_driver": false, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "CI build failure; no driver behavior or spec involvement."}
+```
+
+## Example 11 --- `driver_spec_nonconformance` (error propagation)
+
+Ticket: CDRIVER-901
+Summary: _mongoc_write_result_complete() does not populate bson_error_t from write concern errors
+Description: mongoc_write_result_t stores writeConcernErrors. When mongoc_bulk_operation_execute() completes, write concern errors are not propagated into the bson_error_t output parameter, so callers see no error even when one occurred.
+Links: Related:SPEC-340
+
+```json
+{"key": "CDRIVER-901", "category": "driver_spec_nonconformance", "spec_areas": ["write-concern"], "is_nonconformance": true, "mentions_other_driver": false, "preventable_by_yaml_test": true, "confidence": "high", "rationale": "Write concern spec requires errors surfaced to caller; driver silently drops writeConcernErrors from bulk result."}
+```
+
+## Example 12 --- `driver_spec_nonconformance` (index option name)
+
+Ticket: PHPC-895
+Summary: Require 16-byte data length for Binary UUID subtypes 0x03 and 0x04
+Description: The BSON spec requires UUID binary subtypes to be exactly 16 bytes. The PHP driver does not enforce this constraint, unlike the legacy driver which throws an exception.
+Links: Related:SWIFT-140
+
+```json
+{"key": "PHPC-895", "category": "driver_spec_nonconformance", "spec_areas": ["bson"], "is_nonconformance": true, "mentions_other_driver": false, "preventable_by_yaml_test": true, "confidence": "high", "rationale": "BSON spec requires UUID binary subtypes 0x03/0x04 to be exactly 16 bytes; driver omits this validation."}
+```
+
+## Example 13 --- `not_relevant` (error message formatting, not spec-prescribed)
+
+Ticket: CDRIVER-2017
+Summary: Inconsistent error reporting for insert, update, and replace BSON validation
+Description: The functions that append write statements to the bulk operation report BSON validation errors inconsistently across insert, update, and replace paths. Some paths return detailed errors, others return generic messages.
+Links: Related:CDRIVER-2018
+
+```json
+{"key": "CDRIVER-2017", "category": "not_relevant", "spec_areas": [], "is_nonconformance": false, "mentions_other_driver": false, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "Inconsistent internal error message formatting; no spec prescribes the exact error text for BSON validation failures."}
+```
+
+## Example 14 --- `driver_spec_nonconformance` (wire protocol parsing)
+
+Ticket: CDRIVER-4598
+Summary: _mongoc_rpc_scatter segfaults when parsing an OP_MSG with optional CRC checksum
+Description: As part of the serverless proxy development, the optional CRC-32C checksum field in OP_MSG frames causes a segfault. The wire protocol spec defines this optional checksum and drivers must handle it.
+Links: Related:CDRIVER-4617
+
+```json
+{"key": "CDRIVER-4598", "category": "driver_spec_nonconformance", "spec_areas": ["wire-protocol"], "is_nonconformance": true, "mentions_other_driver": false, "preventable_by_yaml_test": true, "confidence": "high", "rationale": "Wire protocol spec defines optional CRC-32C checksum in OP_MSG; driver crashes instead of parsing it."}
 ```
