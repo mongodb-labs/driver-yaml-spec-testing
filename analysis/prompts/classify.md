@@ -38,7 +38,7 @@ The driver implemented a spec area **incorrectly**. The spec says X; the driver 
 
 **Yes:** "UpdateOne should return error when update has no modifier" (spec requirement). / "nUpdated should be nMatched in bulk write result" (spec terminology). / "Regex flags 'u' and 'l' dropped during BSON serialization" (BSON spec). / "$clusterTime element should use the greater of the two values" (Sessions spec). / "context cancellation before transaction commit should abort the transaction" (Transactions spec).
 
-**Not this:** A performance bug, memory leak, or internal implementation detail that doesn't contradict a specific spec requirement → probably `not_relevant`. A systemic architectural flaw in a spec-covered component (pool leak, topology resource leak) → probably `avoidable_by_spec_conformance`.
+**Not this:** A performance bug, memory leak, or internal implementation detail that doesn't contradict a specific spec requirement → `not_relevant`. A systemic architectural flaw in a spec-covered component (pool leak, topology resource leak) that doesn't correspond to a specific spec rule → `not_relevant`.
 
 ---
 
@@ -52,28 +52,6 @@ The ticket was filed **because** two or more drivers behave differently from eac
 - A ticket with `links: Related: NODE-1234` or `Depends: DRIVERS-567`---a related link alone is not cross-driver inconsistency. Cross-driver tickets must be about a behavioral divergence between drivers, not about depending on or coordinating with another ticket.
 - A ticket that mentions another driver only as background context ("similar to how Java does it") but was filed for a different primary reason.
 - A ticket whose summary is about adding a missing feature or fixing a spec bug---that's `driver_spec_nonconformance`, even if it references another driver's implementation.
-
----
-
-### `avoidable_by_spec_conformance`
-A driver-internal bug in a **spec-covered component** that represents the *kind of architectural mistake* that rigorous spec conformance and required YAML spec tests would plausibly have caught before release. The bug doesn't have to be a literal spec violation---it can be a subtle systemic flaw (resource leak, state-machine error, lifetime bug) in a component the spec governs (connection pool, topology monitor, retry logic, auth flow).
-
-The key question: *If YAML spec tests for this component had existed and had been required to pass before shipping, would this class of bug have been caught?*
-
-**Yes:** Connection-pool resource leak (CMAP spec tests verify pool lifecycle). / Topology monitor leaking server descriptions on reconnect (SDAM spec tests exercise reconnect paths). / Connection not returned to pool after bulkWrite hang (CMAP). / Logging regression where a flag stops being emitted (Logging spec tests check log output).
-
-**Critical anti-patterns---these are NOT `avoidable_by_spec_conformance`:**
-- Memory leaks in internal buffers (Netty ByteBuf, libbson buffers)---these are implementation details below the spec level → `not_relevant`.
-- Performance-only issues (e.g. TCP_USER_TIMEOUT tuning)---no spec governs kernel socket options → `not_relevant`.
-- CI/build failures, test memory leaks, Coverity static analysis warnings → `not_relevant`.
-- Language-ergonomic issues (LINQ query translation, ORM mapping, missing Python method on cursor) → `not_relevant`.
-- Documentation bugs or unclear API docs → `not_relevant`.
-- Error message formatting or validation that is incidental (not spec-prescribed) → usually `not_relevant`.
-- Any bug where a YAML test could not plausibly have caught it → `not_relevant` or `driver_spec_nonconformance`.
-
-**When unsure between A and N:** If the driver deviated from a specific spec requirement, use `driver_spec_nonconformance`. Use `avoidable_by_spec_conformance` only for systemic architectural bugs (resource lifetimes, state-machine correctness, retry loop correctness) in spec-covered components.
-
-**When unsure between A and R:** Default to `not_relevant`. A is a narrow category.
 
 ---
 
@@ -113,7 +91,7 @@ Everything else: build/packaging, CI failures, doc typos, dependency bumps, perf
 
 3. **Ticket mentions another driver by name** → not automatically X. If the ticket is about the filing driver's own spec compliance, it's N even if another driver is mentioned for comparison.
 
-4. **Bug is in a spec-covered component** → not automatically A. Memory leaks, perf issues, CI failures, and docs bugs in spec-covered components are still `not_relevant`.
+4. **Bug is in a spec-covered component** → not automatically N. Memory leaks, perf issues, CI failures, and docs bugs in spec-covered components are still `not_relevant` unless the bug contradicts a specific spec rule.
 
 5. **Ticket uses spec terminology** → not automatically N. Check whether the bug is a literal deviation from the spec. If the spec doesn't say anything about this behavior, it might be `not_relevant`.
 
@@ -200,7 +178,7 @@ Links: Depends:PHPLIB-220, Related:PHPC-746
 {"key": "HHVM-237", "category": "cross_driver_inconsistency", "spec_areas": ["connection-string"], "is_nonconformance": false, "mentions_other_driver": true, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "Explicit behavioral divergence: PHPC uses 127.0.0.1, HHVM uses localhost; filed to align them."}
 ```
 
-## Example 4 --- `avoidable_by_spec_conformance`
+## Example 4 --- `not_relevant` (implementation/architecture bug, not a spec rule violation)
 
 Ticket: NODE-1761
 Summary: Mongos topology leaks memory on server reconnect
@@ -208,8 +186,10 @@ Description: I have been battling some weird memory leaks in our apps, and have 
 Links: (none)
 
 ```json
-{"key": "NODE-1761", "category": "avoidable_by_spec_conformance", "spec_areas": ["cmap"], "is_nonconformance": false, "mentions_other_driver": false, "preventable_by_yaml_test": "unsure", "confidence": "medium", "rationale": "Connection pool teardown bug on reconnect; CMAP spec tests for pool lifecycle would plausibly have caught this class of leak."}
+{"key": "NODE-1761", "category": "not_relevant", "spec_areas": [], "is_nonconformance": false, "mentions_other_driver": false, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "Memory leak in pool teardown on reconnect; implementation bug with no specific contradicted spec rule."}
 ```
+
+Note: being in a spec-covered component (connection pooling) does not make this `driver_spec_nonconformance`. The CMAP spec does not contain a rule saying "pools must not leak on reconnect"---it defines the pool API and lifecycle events. A resource leak is an implementation flaw, not a spec deviation.
 
 ## Example 5 --- `spec_ambiguity_or_gap`
 

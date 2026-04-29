@@ -104,7 +104,7 @@ AttributeError: 'Cursor' object has no attribute 'to_list'
 14,CSHARP-3200,https://jira.mongodb.org/browse/CSHARP-3200,driver_spec_nonconformance,,medium,Spec nonconformance in crud.,not_relevant,,Release on Evergreen,"
     See DRIVERS-1383 for updated details.
     ",Improvement,Build,,Depends:DRIVERS-1383|Depends:CSHARP-3471|Related:CSHARP-2933|Related:CSHARP-4154
-15,NODE-1761,https://jira.mongodb.org/browse/NODE-1761,avoidable_by_spec_conformance,cmap,high,Mongos topology leaks pools on reconnect; CMAP cleanup issue.,avoidable_by_spec_conformance,,Mongos topology leaks memory on server reconnect,"From the ticket:
+15,NODE-1761,https://jira.mongodb.org/browse/NODE-1761,avoidable_by_spec_conformance,cmap,high,Mongos topology leaks pools on reconnect; CMAP cleanup issue.,not_relevant,,Mongos topology leaks memory on server reconnect,"From the ticket:
 
 {quote}
 
@@ -408,7 +408,7 @@ libmongoc may be unique among drivers in that it reports all write concern error
     </div>
 {html}
 ",Improvement,,,Depends:GODRIVER-1827|Issue split:DRIVERS-1476|Related:GODRIVER-2165
-47,RUBY-1002,https://jira.mongodb.org/browse/RUBY-1002,driver_spec_nonconformance,,low,Insufficient detail for classification.,avoidable_by_spec_conformance,,slave_ok is no longer logged by the Ruby Driver,"Sometime in the last few weeks, something changed and slave_ok no longer gets logged when doing secondary reads. I haven't had time to figure out which commit caused it, but somewhere between 739ca3905ef107c5731edd3d9b93ea3a87e4ab31 and HEAD.
+47,RUBY-1002,https://jira.mongodb.org/browse/RUBY-1002,driver_spec_nonconformance,,low,Insufficient detail for classification.,not_relevant,,slave_ok is no longer logged by the Ruby Driver,"Sometime in the last few weeks, something changed and slave_ok no longer gets logged when doing secondary reads. I haven't had time to figure out which commit caused it, but somewhere between 739ca3905ef107c5731edd3d9b93ea3a87e4ab31 and HEAD.
 
 {code}
 MyModel.with(:read => {:mode => :secondary_preferred}).count
@@ -867,7 +867,7 @@ Kind regards, Anthony{noformat}
  
 
  ",Bug,Serialization,,Related:CSHARP-4112
-75,NODE-6370,https://jira.mongodb.org/browse/NODE-6370,avoidable_by_spec_conformance,cmap|crud,low,"bulkWrite hangs and connection not returned to pool, plausibly a CMAP-related bug.",avoidable_by_spec_conformance,,"bulkWrite does not resolve after update, and connection not returned to pool","Our issue has been ongoing for several versions now and have not been able to go beyond 5.9.2 version of the driver. I believe it is the same as NODE-6166 which was closed without finding the issue.
+75,NODE-6370,https://jira.mongodb.org/browse/NODE-6370,avoidable_by_spec_conformance,cmap|crud,low,"bulkWrite hangs and connection not returned to pool, plausibly a CMAP-related bug.",not_relevant,,"bulkWrite does not resolve after update, and connection not returned to pool","Our issue has been ongoing for several versions now and have not been able to go beyond 5.9.2 version of the driver. I believe it is the same as NODE-6166 which was closed without finding the issue.
 
 We have both `find` and `bulkWrite` operations that will behave similarly. We only see the issue in production, and it occurs roughly 1 in 3,000 of our updates, and each of those updates involves 4 or 5 bulkWrite operations. We have moderately heavy load, running about ~4,000 updates per second across all nodes, which is about 40/s on each node.
 
