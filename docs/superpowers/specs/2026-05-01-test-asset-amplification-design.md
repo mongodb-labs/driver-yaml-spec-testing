@@ -169,12 +169,26 @@ control" for the Java counterfactual.
 ### What Rust does not have
 
 No internal-operation-layer test suite analogous to `com.mongodb.internal.operation`. Rust tests
-CRUD exclusively through the unified test runner against 164 JSON files synced from the shared
-specs corpus (`spec/crud/unified/`). Its native tests (`coll.rs`, `bulk_write.rs`,
-`change_stream.rs`, etc.) cover behaviors the corpus does not: large-insert batching limits,
-error-detail structure, cursor-drop semantics, `allowDiskUse` option propagation. They are
-explicitly not comprehensive CRUD coverage --- that layer is delegated entirely to the shared corpus
-from day one.
+CRUD comprehensively through the unified test runner against 164 JSON files synced from the shared
+specs corpus (`spec/crud/unified/`).
+
+Its native tests (`coll.rs` at 1,319 LOC / 38 tests, `bulk_write.rs` at 544 LOC / 8 tests,
+`cursor.rs` at 291 LOC / 7 tests) deliberately target behaviors the shared corpus does not cover:
+
+- **Batching and wire-protocol limits**: `large_insert_*`, `max_write_batch_size_batching`,
+  `max_message_size_bytes_batching`, `namespace_batch_splitting`, `insert_many_document_sequences`
+- **Error-detail structure**: `insert_err_details`, `write_error_batches`, `too_large_client_error`,
+  `unsupported_server_client_error`
+- **Rust-specific type/serde behavior**: `invalid_utf8_response`,
+  `configure_human_readable_serialization`, `aggregate_with_generics`
+- **Async cursor lifecycle**: `kill_cursors_on_drop`, `no_kill_cursors_on_exhausted`,
+  `batch_exhaustion`, `cursor_final_batch`
+- **Option propagation smoke tests**: `find_allow_disk_use_*`, `delete_hint_*`
+- **Basic operation smoke tests**: `count`, `find`, `update`, `delete`, `aggregate_out`
+
+The last two categories are the only ones that overlap with what the YAML corpus tests, and they are
+shallow single-case checks, not comprehensive option/behavior coverage. The YAML corpus carries that
+weight entirely.
 
 Also notable: Rust has no old-format pre-UTF spec runner. Its CRUD tests skip the intermediate
 stage that Java went through (JSON-powered per-spec runners) and land directly in the unified
@@ -194,6 +208,12 @@ The contrast is the core argument: Java had to build comprehensive integration t
 because no shared corpus existed; it now carries that test suite as technical debt. Rust inherited
 the corpus on day one and spent its testing budget on gaps --- error paths, Rust-specific async
 behavior, batching edge cases --- rather than reimplementing what the corpus already verifies.
+
+**On runner LOC disparity**: Rust's runner (13,100 LOC) is larger than Java's (9,400 LOC) despite
+covering the same spec surface area. This is attributable to Rust's language verbosity relative to
+Java --- explicit lifetimes, async machinery, match exhaustiveness --- not to a broader
+implementation. The paper should note this to preempt the reader inferring that post-YAML runners
+are inherently more expensive.
 
 ### What to investigate
 
