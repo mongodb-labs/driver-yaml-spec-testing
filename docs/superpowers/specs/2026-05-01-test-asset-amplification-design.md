@@ -41,7 +41,7 @@ Three layers, each measured separately:
 | Layer | Java LOC (current) | Nature |
 |---|---|---|
 | Operation tests (`*/internal/operation*`) | ~15,400 (58 files) | Imperative; Groovy/Spock; breaks on internal refactoring |
-| Unified test runner (`driver-sync/.../unified/`) | ~5,400 (17 files) | Imperative; tests stable public API; changes track spec evolution |
+| Unified test runner (`driver-sync/.../unified/` + reactive-streams adapter) | ~9,400 (8,610 + 812) | Imperative; tests stable public API; changes track spec evolution |
 | YAML corpus (specs repo, all drivers) | ~124,000 | Declarative data; no logic; shared across all 12 drivers |
 
 Key distinction: YAML is *data*, not code. Comparing raw YAML LOC to native LOC is misleading.
@@ -54,9 +54,10 @@ across 12 drivers.
 
 **Lower-bound amplification estimate**: the Java operation suite (~15k LOC) represents one driver's
 pre-YAML integration test burden. Across 12 drivers that would be ~180k LOC of fragile imperative
-code. The post-YAML arrangement replaces that with some LOC of runners (one per driver; Java's is ~5,400,
-Python's is ~1,600, Go's is ~10,000) plus 124k LOC of shared YAML data --- and the YAML data is
-qualitatively different: no logic, no logic bugs, no internal-API coupling.
+code. The post-YAML arrangement replaces that with some LOC of runners (one per driver; Java's is ~9,400
+across driver-sync and reactive-streams, Python's is ~1,600, Go's is ~10,000) plus 124k LOC of
+shared YAML data --- and the YAML data is qualitatively different: no logic, no logic bugs, no
+internal-API coupling.
 
 The vivid abstract number: "one line of YAML exercises 12 drivers."
 
@@ -66,8 +67,10 @@ The vivid abstract number: "one line of YAML exercises 12 drivers."
 
 1. **Operation test LOC**: already measured. 58 files, ~15,400 LOC under
    `driver-core/src/test/*/com/mongodb/internal/operation/`.
-2. **Unified runner LOC**: already measured. ~5,400 LOC under
-   `driver-sync/src/test/*/com/mongodb/client/unified/`.
+2. **Unified runner LOC**: ~9,400 LOC total. driver-sync `unified/` package: 8,610 LOC across all
+   `.java` files (not just `Unified*.java` --- includes `Entities.java`, `EventMatcher.java`,
+   `ContextElement.java`, etc.). Reactive-streams adapter: 812 LOC. The driver-sync package is the
+   substantive runner; reactive-streams contains thin wiring to the sync adapter.
 3. **YAML corpus LOC**: already known from the paper. ~124,000 lines, 606 files in the specs repo.
    Verify current count via `find` + `wc -l` on the specs repo.
 4. **Pre-UTF old-format spec runner LOC** (optional, for historical depth): find any JSON-driven
@@ -160,24 +163,32 @@ control" for the Java counterfactual.
 | Layer | LOC | Nature |
 |---|---|---|
 | Native integration tests (public API) | ~7,600 | Idiomatic Rust (`#[tokio::test]`); targets gaps not in YAML |
-| Spec runner (unified + legacy runners) | ~13,100 | Runs YAML corpus; more complete than Java's |
+| Spec runner (unified + legacy runners) | ~13,100 | Runs YAML/JSON corpus; more complete than Java's |
+| CRUD unified test data (local copy from specs) | 164 JSON files | Synced from specs repo; run via unified runner |
 
 ### What Rust does not have
 
-No internal-operation-layer test suite analogous to `com.mongodb.internal.operation`. Its native
-tests (`coll.rs`, `bulk_write.rs`, `change_stream.rs`, etc.) test specific behaviors the YAML
-corpus does not cover: large-insert batching limits, error-detail structure, cursor-drop semantics,
-`allowDiskUse` option propagation. They are not comprehensive CRUD coverage --- that layer is
-delegated entirely to the YAML corpus.
+No internal-operation-layer test suite analogous to `com.mongodb.internal.operation`. Rust tests
+CRUD exclusively through the unified test runner against 164 JSON files synced from the shared
+specs corpus (`spec/crud/unified/`). Its native tests (`coll.rs`, `bulk_write.rs`,
+`change_stream.rs`, etc.) cover behaviors the corpus does not: large-insert batching limits,
+error-detail structure, cursor-drop semantics, `allowDiskUse` option propagation. They are
+explicitly not comprehensive CRUD coverage --- that layer is delegated entirely to the shared corpus
+from day one.
+
+Also notable: Rust has no old-format pre-UTF spec runner. Its CRUD tests skip the intermediate
+stage that Java went through (JSON-powered per-spec runners) and land directly in the unified
+runner. This is the clearest illustration of what "building post-YAML" looks like.
 
 ### The comparison
 
 | | Java | Rust |
 |---|---|---|
-| Driver era | Pre-YAML (history from ~2011) | Post-YAML (started 2018) |
+| Driver era | Pre-YAML (history from ~2011) | Post-YAML (started Jan 2018) |
 | Internal operation tests | 15,400 LOC | None |
 | Native public-API tests | Included above | ~7,600 LOC (edge cases only) |
-| Spec runner | 5,400 LOC | 13,100 LOC |
+| Spec runner | ~9,400 LOC (sync + reactive adapter) | ~13,100 LOC |
+| CRUD test strategy | Old-format JSON runner + UTF unified runner | UTF unified runner only (164 JSON files from shared corpus) |
 
 The contrast is the core argument: Java had to build comprehensive integration tests from scratch
 because no shared corpus existed; it now carries that test suite as technical debt. Rust inherited
@@ -186,12 +197,12 @@ behavior, batching edge cases --- rather than reimplementing what the corpus alr
 
 ### What to investigate
 
-The user's open question is whether Rust's YAML corpus reliance left any coverage gaps in CRUD that
-affected users or required workarounds. Possible investigation:
-- Check Rust Jira (RUST project) for CRUD conformance bugs that were *not* caught by the YAML
-  corpus --- this would be evidence that the corpus is insufficient, not that it is amplifying.
-- Check whether Rust added any CRUD-specific JSON test data locally (i.e., tests not in the shared
-  specs repo) to compensate for missing YAML coverage.
+Whether Rust's corpus-only CRUD approach left any coverage gaps that affected users:
+- Check Rust Jira (RUST project) for CRUD conformance bugs not caught by the YAML corpus --- this
+  would be evidence the corpus is insufficient, not that it is amplifying.
+- Rust's local CRUD data (164 files) is a synced copy from the specs repo, not bespoke tests, so
+  any gap in the shared corpus is also a gap for Rust. This is the same gap Java's operation tests
+  partially fill --- making the comparison sharper.
 
 ## Scope and caveats to state in the paper
 
