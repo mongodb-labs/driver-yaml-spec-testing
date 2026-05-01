@@ -1,0 +1,156 @@
+---
+title: Test-Asset Amplification Factor --- Design Spec
+date: 2026-05-01
+status: draft
+---
+
+# Test-Asset Amplification Factor
+
+## Context
+
+This is Proposal C from `CLAUDE.md`: a "cheap, vivid" quantitative measurement for the ISSRE 2026
+resubmission of *The Polyglot's Dilemma*. The goal is a punchy leverage number for the abstract and
+a short paper section making two related claims:
+
+1. **Amplification claim**: a single YAML test file, written once, is exercised by all 12 drivers.
+   The cost model for YAML-based testing (runner + data corpus) compares favorably to the
+   per-driver cost of idiomatic native tests.
+2. **Maintenance burden claim**: the pre-YAML native operation tests are fragile imperative code
+   that churns when driver internals change. Post-YAML runners test the stable public API and churn
+   only with spec evolution. This is measurable via git log.
+
+## Baseline: the Java driver
+
+Focus on the Java driver (`mongo-java-driver`) because:
+
+- It is old enough to predate any YAML-based testing, making the counterfactual concrete.
+- The `com.mongodb.internal.operation` test suite (`driver-core`) was the main integration testing
+  strategy pre-YAML: it tested operations at the internal layer so that both sync and async front-ends
+  were covered without duplication at the public API layer.
+- That suite became largely redundant after YAML-based testing arrived but was not removed, because
+  determining which assertions were still load-bearing was too costly. It therefore serves as a
+  preserved artifact of "what one driver needed before the shared corpus existed."
+
+**YAML adoption date for Java driver**: 2015-03-06 (commit `7b96881e60`, "Implemented CRUD Spec
+tests"). This is the pre/post split for churn analysis.
+
+## Cost model
+
+Three layers, each measured separately:
+
+| Layer | Java LOC (current) | Nature |
+|---|---|---|
+| Operation tests (`*/internal/operation*`) | ~15,400 (58 files) | Imperative; Groovy/Spock; breaks on internal refactoring |
+| Unified test runner (`driver-sync/.../unified/`) | ~5,400 (17 files) | Imperative; tests stable public API; changes track spec evolution |
+| YAML corpus (specs repo, all drivers) | ~124,000 | Declarative data; no logic; shared across all 12 drivers |
+
+Key distinction: YAML is *data*, not code. Comparing raw YAML LOC to native LOC is misleading.
+The runner is the real per-driver infrastructure cost; YAML lines are a shared data cost amortized
+across 12 drivers.
+
+**Marginal cost per new test:**
+- Pre-YAML: write N lines of imperative test code per driver. 12 drivers = 12N lines.
+- Post-YAML: write N lines of YAML data once. Runner delta ≈ 0 for most new tests.
+
+**Lower-bound amplification estimate**: the Java operation suite (~15k LOC) represents one driver's
+pre-YAML integration test burden. Across 12 drivers that would be ~180k LOC of fragile imperative
+code. The post-YAML arrangement replaces that with some LOC of runners (one per driver; Java's is ~5,400,
+Python's is ~1,600, Go's is ~10,000) plus 124k LOC of shared YAML data --- and the YAML data is
+qualitatively different: no logic, no logic bugs, no internal-API coupling.
+
+The vivid abstract number: "one line of YAML exercises 12 drivers."
+
+## Claim 1 --- Amplification factor
+
+### Data to collect
+
+1. **Operation test LOC**: already measured. 58 files, ~15,400 LOC under
+   `driver-core/src/test/*/com/mongodb/internal/operation/`.
+2. **Unified runner LOC**: already measured. ~5,400 LOC under
+   `driver-sync/src/test/*/com/mongodb/client/unified/`.
+3. **YAML corpus LOC**: already known from the paper. ~124,000 lines, 606 files in the specs repo.
+   Verify current count via `find` + `wc -l` on the specs repo.
+4. **Pre-UTF old-format spec runner LOC** (optional, for historical depth): find any JSON-driven
+   runners that predate the unified runner in `driver-core/src/test/functional/com/mongodb/client/`.
+   `CrudTestHelper.java` is ~102 LOC; enumerate others.
+
+### Narrative structure
+
+- State the three-layer cost model as a table (runner + YAML data + per-driver historic test suites).
+- Present the Java operation suite as the counterfactual.
+- Give the "12 drivers × 15k LOC = 180k LOC avoided" number with an explicit caveat: the operation
+  tests cover the pre-YAML era specs; post-YAML spec areas have no operation-test counterpart, so
+  180k understates the true saving.
+- State the marginal-cost argument: runner is amortized; each new spec test costs YAML data only.
+
+## Claim 2 --- Maintenance burden
+
+### Data to collect
+
+Mine the Java driver git log (`mongo-java-driver`) for:
+
+1. **Monthly commit count touching operation test files** (pre- and post-2015-03-06):
+   ```
+   git log --oneline --after="YYYY-MM-DD" --before="YYYY-MM-DD" \
+     -- "*/internal/operation*Specification*" "*/internal/operation*Test*"
+   ```
+   Aggregate by month. Plot as a time series with 2015-03-06 marked.
+
+2. **Monthly commit count touching the unified runner** (post-runner-introduction):
+   ```
+   git log --oneline -- "*/client/unified/Unified*.java"
+   ```
+   Aggregate by month.
+
+3. **Monthly commit count touching YAML corpus** (in the specs repo):
+   Count commits to `source/` touching `*.json` or `*.yaml` files, by month.
+
+### Hypothesis
+
+- Operation test churn is high and variable pre-2015 and remains non-zero post-2015, driven by
+  internal refactoring (Spock mock updates, sync/async duplication maintenance).
+- Unified runner churn is lower and follows a step-function pattern tied to spec evolution, not
+  driver internals.
+- YAML corpus churn reflects feature additions and spec corrections --- meaningful signal, not noise.
+
+### Qualitative supplement
+
+One paragraph explaining *why* the operation tests are fragile, using concrete examples:
+
+- They test the internal operation layer (pre-4.0 this was the public API; post-4.0 it is purely
+  internal), so any internal refactoring forces test updates.
+- Groovy/Spock mocks of internal collaborators break whenever those collaborators' interfaces change.
+- Sync and async paths are tested separately, creating duplication (partially hidden by Spock's
+  `where:` tables but still real maintenance surface).
+- Correctness is asserted via server-side effects rather than command monitoring, so wire-protocol
+  conformance is not directly verified.
+
+YAML-based tests avoid all four: they target the stable public client API, carry no mock logic,
+run once against both sync and async via an adapter, and express expected commands declaratively.
+
+## Concrete example (anchor for both claims)
+
+Pick `FindOperationSpecification.groovy` as the side-by-side example:
+
+- Show its LOC and a short excerpt illustrating Spock mock setup for internal collaborators.
+- Show the equivalent YAML test file (e.g., from the CRUD spec) and its LOC.
+- Annotate what the Groovy boilerplate is doing that the YAML expresses declaratively.
+
+This keeps the section from being purely abstract and gives a skeptical reader something to examine.
+
+## Scope and caveats to state in the paper
+
+- The Java driver is used as the representative case; other drivers may have different ratios.
+- The operation tests and YAML corpus do not cover identical spec areas: operation tests are denser
+  for older CRUD options; YAML tests cover post-2015 specs with no operation-test counterpart.
+  This means 180k LOC is a lower bound, not a precise estimate.
+- LOC is an imperfect proxy; the qualitative distinction (imperative vs. declarative data) matters
+  as much as the count.
+
+## Output artifacts
+
+- A short paper section (300--500 words + one table + one figure) covering both claims.
+- The table: three-layer cost model.
+- The figure: monthly commit churn time series for operation tests vs. unified runner, 2012--2025,
+  with 2015-03-06 annotated.
+- The concrete example: inline code excerpt or appendix, ≤ half a column.
