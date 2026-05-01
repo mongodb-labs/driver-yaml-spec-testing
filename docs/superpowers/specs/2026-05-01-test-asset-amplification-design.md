@@ -128,29 +128,90 @@ One paragraph explaining *why* the operation tests are fragile, using concrete e
 YAML-based tests avoid all four: they target the stable public client API, carry no mock logic,
 run once against both sync and async via an adapter, and express expected commands declaratively.
 
-## Concrete example (anchor for both claims)
+## Concrete examples (graduated complexity)
 
-Pick `FindOperationSpecification.groovy` as the side-by-side example:
+Use three operation test files as a graduated illustration, showing that complexity scales with
+the operation --- and that the YAML equivalent is comparably expressive at every level.
 
-- Show its LOC and a short excerpt illustrating Spock mock setup for internal collaborators.
-- Show the equivalent YAML test file (e.g., from the CRUD spec) and its LOC.
-- Annotate what the Groovy boilerplate is doing that the YAML expresses declaratively.
+| Complexity | Java file | Java LOC | Role |
+|---|---|---|---|
+| Simple | `FindOperationSpecification.groovy` | 713 | Basic query; single return path |
+| Medium | `AggregateOperationSpecification.groovy` | 495 | Pipeline; cursor handling |
+| Complex | `MixedBulkWriteOperationSpecification.groovy` | 1,253 | Multiple write models; error aggregation; ordering |
 
-This keeps the section from being purely abstract and gives a skeptical reader something to examine.
+For each:
+- Show a short excerpt illustrating the Groovy/Spock pattern (mock setup, `where:` table, or
+  server-side-effect assertion).
+- Show the equivalent YAML test (from the CRUD or aggregation spec) and its LOC.
+- One sentence annotating what boilerplate the YAML eliminates.
+
+The bulk write example is particularly useful: `MixedBulkWriteOperationSpecification.groovy` at
+1,253 LOC is the largest single file in the suite, and bulk write has meaningful YAML coverage in
+the specs repo, making the side-by-side concrete.
+
+## Rust driver comparison (positive control)
+
+The Rust driver (`mongo-rust-driver`) started in January 2018 --- three years after the YAML corpus
+existed --- and was designed from the start to rely on it. This makes it a natural "positive
+control" for the Java counterfactual.
+
+### What Rust has
+
+| Layer | LOC | Nature |
+|---|---|---|
+| Native integration tests (public API) | ~7,600 | Idiomatic Rust (`#[tokio::test]`); targets gaps not in YAML |
+| Spec runner (unified + legacy runners) | ~13,100 | Runs YAML corpus; more complete than Java's |
+
+### What Rust does not have
+
+No internal-operation-layer test suite analogous to `com.mongodb.internal.operation`. Its native
+tests (`coll.rs`, `bulk_write.rs`, `change_stream.rs`, etc.) test specific behaviors the YAML
+corpus does not cover: large-insert batching limits, error-detail structure, cursor-drop semantics,
+`allowDiskUse` option propagation. They are not comprehensive CRUD coverage --- that layer is
+delegated entirely to the YAML corpus.
+
+### The comparison
+
+| | Java | Rust |
+|---|---|---|
+| Driver era | Pre-YAML (history from ~2011) | Post-YAML (started 2018) |
+| Internal operation tests | 15,400 LOC | None |
+| Native public-API tests | Included above | ~7,600 LOC (edge cases only) |
+| Spec runner | 5,400 LOC | 13,100 LOC |
+
+The contrast is the core argument: Java had to build comprehensive integration tests from scratch
+because no shared corpus existed; it now carries that test suite as technical debt. Rust inherited
+the corpus on day one and spent its testing budget on gaps --- error paths, Rust-specific async
+behavior, batching edge cases --- rather than reimplementing what the corpus already verifies.
+
+### What to investigate
+
+The user's open question is whether Rust's YAML corpus reliance left any coverage gaps in CRUD that
+affected users or required workarounds. Possible investigation:
+- Check Rust Jira (RUST project) for CRUD conformance bugs that were *not* caught by the YAML
+  corpus --- this would be evidence that the corpus is insufficient, not that it is amplifying.
+- Check whether Rust added any CRUD-specific JSON test data locally (i.e., tests not in the shared
+  specs repo) to compensate for missing YAML coverage.
 
 ## Scope and caveats to state in the paper
 
-- The Java driver is used as the representative case; other drivers may have different ratios.
+- The Java driver is the pre-YAML representative; other pre-YAML drivers (C, C++, Ruby, Python)
+  likely have analogous native test suites, but are not measured here.
 - The operation tests and YAML corpus do not cover identical spec areas: operation tests are denser
   for older CRUD options; YAML tests cover post-2015 specs with no operation-test counterpart.
-  This means 180k LOC is a lower bound, not a precise estimate.
+  This means 15k LOC is a lower bound on the per-driver native test burden.
 - LOC is an imperfect proxy; the qualitative distinction (imperative vs. declarative data) matters
   as much as the count.
+- The Rust runner (13,100 LOC) is larger than Java's (5,400 LOC) partly because Rust implements
+  more of the spec runner surface; this should be noted to avoid the misleading implication that
+  post-YAML drivers have smaller runners.
 
 ## Output artifacts
 
-- A short paper section (300--500 words + one table + one figure) covering both claims.
-- The table: three-layer cost model.
-- The figure: monthly commit churn time series for operation tests vs. unified runner, 2012--2025,
-  with 2015-03-06 annotated.
-- The concrete example: inline code excerpt or appendix, ≤ half a column.
+- A short paper section (400--600 words + two tables + one figure) covering both claims and the
+  Rust comparison.
+- Table 1: three-layer cost model (Java).
+- Table 2: Java vs. Rust side-by-side.
+- The figure: monthly commit churn time series for Java operation tests vs. unified runner,
+  2012--2025, with 2015-03-06 annotated.
+- The concrete examples: three inline excerpts (Find / Aggregate / BulkWrite), ≤ one column total.
