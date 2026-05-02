@@ -64,6 +64,6 @@ export ANTHROPIC_API_KEY=sk-ant-...
 ## Notes
 
 - Driver projects: see `data/projects.json`. We exclude MONGOCRYPT and MONGOID per Jesse.
-- Window: 2015-01-01 → 2026-04-28 (the paper's timeframe; CRUD v1 was 2015).
+- Window: all time → 2026-04-28. We initially used a 2015-01-01 lower bound but later removed it; the all-time pull is now the default and recovers ~3,974 pre-2015 tickets (mostly in JAVA, PHP, CSHARP, RUBY, PYTHON, CDRIVER, PERL, NODE).
 - We pull issuetype `Bug` and `Improvement` only. Spec-authoring tickets in `DRIVERS`/`SPEC` are filed as `Task` --- pull those separately if needed (`--types "Task"`).
 - The classifier emits one CSV row per ticket with: `category`, `spec_area`, `mentions_other_driver`, `confidence`, `rationale`. See `prompts/classify.md` for the category definitions.

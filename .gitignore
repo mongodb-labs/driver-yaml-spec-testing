@@ -1,11 +1,14 @@
 .idea/
 .DS_Store
 .venv/
+.claude/
 __pycache__/
 *.pyc
 analysis/data/tickets/
 analysis/data/chunks/
 analysis/data/specifications/
+analysis/data/driver_repos/
+analysis/data/sonnet_results/
 analysis/data/pull.log
 *.pat
 .env

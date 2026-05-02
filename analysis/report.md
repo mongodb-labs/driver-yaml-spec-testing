@@ -10,7 +10,7 @@ MongoDB maintains ~12 native driver implementations (Python, Java, Node.js, C#, 
 
 **Research question:** Did the introduction of YAML spec tests (UTF and predecessor formats) reduce the rate of `driver_spec_nonconformance` bugs---bugs where a driver's behavior deviated from a published spec requirement?
 
-**Approach:** Mine all resolved Bug and Improvement tickets from MongoDB driver Jira projects (2015--2026). Classify each ticket using an LLM classifier. Compute a before/after nonconformance rate per spec area, using the date YAML tests were first committed to the specs repository as the intervention date.
+**Approach:** Mine all resolved Bug and Improvement tickets from MongoDB driver Jira projects (2009--2026, all-time history). Classify each ticket using an LLM classifier. Compute a before/after nonconformance rate per spec area, using the date YAML tests were first committed to the specs repository as the intervention date.
 
 ---
 
@@ -20,32 +20,39 @@ MongoDB maintains ~12 native driver implementations (Python, Java, Node.js, C#, 
 
 22 driver projects: CDRIVER, NODE, JAVA, CSHARP, GODRIVER, RUBY, PYTHON, PHPC, CXX, RUST, PHPLIB, SWIFT, PERL, HHVM, MOTOR, MGO, SCALA, JAVARS, JAVARX, SPEC, DRIVERS, DRIVERSOLD. Excluded: MONGOCRYPT, MONGOID (not core driver implementations).
 
-Ticket window: 2015-01-01 through 2026-04-28 (date of data pull). Issuetypes: Bug and Improvement only (Task excluded to avoid spec-authoring noise, except SPEC and DRIVERS where Task covers authoring history).
+Ticket window: all-time through 2026-04-28 (date of data pull). The oldest ticket is PERL-1 from 2009-07-17. Issuetypes: Bug and Improvement only (Task excluded to avoid spec-authoring noise, except SPEC and DRIVERS where Task covers authoring history).
 
 ### 2.2 Pull methodology
 
 Pulled via Jira REST API, authenticated with a personal access token. Per-project JSONL files written to `data/tickets/`. Fields captured: key, project, summary, description, issuetype, status, resolution, priority, created, resolutiondate, components, labels, fixVersions, links.
 
-**Total tickets pulled: 13,538** across 22 projects.
+**Total tickets pulled: 17,512** across 22 projects, all-time through 2026-04-28. The oldest ticket is PERL-1, resolved 2009-07-17.
 
 | Project | Tickets | Notes |
 |---|---:|---|
-| NODE | 1,779 | Node.js driver |
-| CDRIVER | 1,830 | libmongoc (C driver) |
-| JAVA | 1,705 | Java driver |
-| CSHARP | 1,396 | .NET driver |
+| JAVA | 2,505 | Java driver (oldest in 2009) |
+| CDRIVER | 2,115 | libmongoc (C driver) |
+| CSHARP | 1,964 | .NET driver |
+| NODE | 1,956 | Node.js driver |
+| RUBY | 1,697 | Ruby driver (oldest in 2009) |
+| PYTHON | 1,369 | PyMongo (oldest in 2009) |
 | GODRIVER | 1,183 | Go driver |
-| RUBY | 1,195 | Ruby driver |
-| PYTHON | 924 | PyMongo |
-| PHPC | 688 | PHP C extension |
-| CXX | 619 | C++ driver |
+| PHP | 815 | Legacy `pecl-mongo` (oldest 2009; superseded by PHPC) |
+| CXX | 790 | C++ driver |
+| PHPC | 719 | PHP C extension |
 | RUST | 482 | Rust driver |
+| PERL | 482 | Perl driver (oldest 2009; retired ~2020) |
 | SWIFT | 322 | Swift driver (retired ~2022) |
 | DRIVERS | 321 | Cross-cutting coordination |
-| PHPLIB | 272 | PHP high-level library |
-| PERL | 253 | Perl driver (retired ~2020) |
+| PHPLIB | 279 | PHP high-level library |
+| MOTOR | 199 | Async PyMongo wrapper |
+| SCALA | 109 | Java/Scala bindings |
 | HHVM | 85 | HipHop VM (historical) |
-| *others* | ~484 | MOTOR, MGO, SCALA, JAVARS, JAVARX, etc. |
+| MGO | 46 | Old community Go driver (mgo) |
+| JAVARS | 45 | Java Reactive Streams |
+| JAVARX | 18 | Java RxJava |
+| DRIVERSOLD | 11 | Pre-DRIVERS coordination project |
+| SPEC | 0 | All Task type, excluded by issuetype filter |
 
 ---
 
@@ -82,7 +89,7 @@ Three models were evaluated on the 80-ticket human-labeled gold set:
 
 ### 3.3 Gold corpus construction
 
-80 tickets were hand-labeled by the first author (Jesse Davis). The labeling sample was constructed by stratified sampling from the Haiku-classified dataset: 20 tickets per category (N, X, R, and a now-dropped A category), balanced across high/medium/low Haiku confidence levels.
+80 tickets were hand-labeled by the first author (Jesse Davis). The labeling sample was constructed by stratified sampling from a preliminary classification pass: 20 tickets per category (N, X, R, and a now-dropped A category), balanced across high/medium/low confidence levels.
 
 To improve evaluation reliability, 120 additional tickets were labeled by Opus 4.7, yielding a **200-ticket gold corpus**. Labels from the author and from Opus were treated as equally authoritative. Category distribution in the 200-ticket corpus:
 
@@ -125,63 +132,105 @@ The baseline's main failure mode was classifying spec-covered-component bugs (me
 
 ---
 
-## 4. Preliminary Results (Haiku classification)
+## 4. Full Sonnet Re-classification
 
-The initial full-corpus classification used Haiku (cheap, fast, but lower quality) to produce `data/classified.csv`. These results should be treated as directional only; the Sonnet re-classification is the authoritative dataset.
+The full 17,512-ticket corpus was classified with claude-sonnet-4-6 using the exp02 prompt (N gate). 17,501 unique tickets were classified (11 tickets appeared as duplicates across chunk boundaries and were de-duplicated). Results are in `data/classified_sonnet.csv`.
 
-Haiku category distribution (13,538 tickets):
+### 4.1 Category distribution
 
 | Category | Count | % |
 |---|---:|---:|
-| not_relevant | 8,596 | 63.5% |
-| driver_spec_nonconformance | 2,505 | 18.5% |
-| avoidable_by_spec_conformance* | 974 | 7.2% |
-| test_infrastructure | 631 | 4.7% |
-| cross_driver_inconsistency | 635 | 4.7% |
-| spec_authoring | 151 | 1.1% |
-| spec_ambiguity_or_gap | 45 | 0.3% |
+| `not_relevant` | 13,863 | 79.2% |
+| `driver_spec_nonconformance` | 2,302 | 13.2% |
+| `test_infrastructure` | 1,188 | 6.8% |
+| `spec_ambiguity_or_gap` | 66 | 0.4% |
+| `cross_driver_inconsistency` | 53 | 0.3% |
+| `spec_authoring` | 29 | 0.2% |
+| **Total** | **17,501** | **100%** |
 
-*This category was dropped from the Sonnet re-run.
+The exp02 prompt eliminated the previously-explored `avoidable_by_spec_conformance` category, which had been too poorly defined to estimate reliably. The N category's precision gate is the key change: it asks the classifier to name the specific violated spec rule, and discards any classification that can't.
 
-Top spec areas across relevant tickets (Haiku): CRUD 929, BSON 869, SDAM 405, Auth 286, CMAP 276, Cursors 276, Connection-String 266, Sessions 193, Wire-Protocol 190, Server-Selection 175.
+**Tickets flagged `preventable_by_yaml_test = true`:** 1,803 (10.3% of all tickets).
 
-**Tickets flagged `preventable_by_yaml_test = true`:** 2,908 (21.5% of all tickets).
+**Top spec areas (N tickets only):**
+
+| Spec area | N tickets |
+|---|---:|
+| BSON | 307 |
+| CRUD | 291 |
+| Server Selection | 279 |
+| SDAM | 269 |
+| Connection String | 218 |
+| Write Concern | 156 |
+| Wire Protocol | 144 |
+| Cursors | 115 |
+| Sessions | 114 |
+| Auth | 112 |
+| Change Streams | 102 |
+| Transactions | 85 |
+| Retryable Writes | 78 |
+| GridFS | 77 |
+| CMAP | 67 |
+
+The early-driver-era spec areas (BSON, Server Selection, Connection String, GridFS) carry the largest absolute counts because every driver had to implement these from scratch in the 2009--2014 era before unified specs existed; many of the bugs in them were filed during that period. Spec areas introduced later (Transactions in 2018, Retryable Writes 2017, Change Streams 2018, CSE 2019, CSOT 2022) accumulated bug counts more rapidly relative to their lifetime.
+
+### 4.2 Per-driver breakdown
+
+| Project | N | X | G | S | T | R | Total |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| JAVA | 255 | 10 | 3 | 0 | 222 | 2,014 | 2,504 |
+| CDRIVER | 346 | 9 | 6 | 0 | 93 | 1,661 | 2,115 |
+| CSHARP | 159 | 6 | 4 | 0 | 117 | 1,677 | 1,963 |
+| NODE | 314 | 4 | 8 | 0 | 150 | 1,480 | 1,956 |
+| RUBY | 296 | 2 | 3 | 0 | 122 | 1,273 | 1,696 |
+| GODRIVER | 186 | 2 | 8 | 0 | 113 | 874 | 1,183 |
+| PYTHON | 173 | 2 | 3 | 0 | 74 | 1,117 | 1,369 |
+| PHP | 66 | 5 | 0 | 0 | 1 | 736 | 808 |
+| CXX | 50 | 1 | 2 | 1 | 49 | 687 | 790 |
+| PHPC | 91 | 2 | 0 | 0 | 4 | 622 | 719 |
+| RUST | 78 | 1 | 1 | 0 | 41 | 361 | 482 |
+| PERL | 81 | 2 | 2 | 0 | 15 | 381 | 481 |
+| SWIFT | 48 | 1 | 1 | 0 | 34 | 238 | 322 |
+| DRIVERS | 44 | 1 | 22 | 27 | 75 | 152 | 321 |
+| PHPLIB | 59 | 1 | 1 | 0 | 56 | 162 | 279 |
+| MOTOR | 2 | 2 | 0 | 0 | 7 | 188 | 199 |
+| SCALA | 4 | 0 | 1 | 0 | 8 | 96 | 109 |
+| HHVM | 31 | 2 | 0 | 0 | 0 | 52 | 85 |
+| MGO | 12 | 0 | 0 | 0 | 1 | 33 | 46 |
+| JAVARS | 0 | 0 | 1 | 0 | 6 | 38 | 45 |
+| JAVARX | 0 | 0 | 0 | 0 | 0 | 18 | 18 |
+| DRIVERSOLD | 7 | 0 | 0 | 1 | 0 | 3 | 11 |
+| **Total** | **2,302** | **53** | **66** | **29** | **1,188** | **13,863** | **17,501** |
+
+The highest absolute N counts are in CDRIVER (346), NODE (314), RUBY (296), JAVA (255), and GODRIVER (186)---the largest and most mature driver projects. JAVA's pre-spec history (2009--2014) is heavy on BSON and wire-protocol nonconformances. The legacy `pecl-mongo` PHP driver (66 N) shows similar density across BSON, server-selection, and write-concern. As a fraction of their ticket base, HHVM (36.5%) and CDRIVER (16.4%) have the highest nonconformance rates.
+
+### 4.3 Estimated true N count with 95% CI
+
+The classifier's precision and recall are not 100%, so the raw model count (2,302) is not the true number of nonconformance tickets. Using the ratio estimator:
+
+**True N estimate = model\_N × (precision / recall) = 2,302 × (0.733 / 0.688) ≈ 2,453**
+
+The reasoning: precision = TP / model\_N, so TP = model\_N × 0.733 = 1,687. Recall = TP / true\_N, so true\_N = TP / 0.688 = 2,453.
+
+For a 95% CI, we apply Wilson score bounds to the model N rate (2,302 / 17,501 = 13.2%), giving [12.7%, 13.7%], then apply the precision/recall correction:
+
+**95% CI on true N: approximately 2,361--2,547 tickets** out of 17,501 total (≈ 14.0% corrected base rate).
+
+These figures are suitable for trend analysis---comparing before/after rates within the same corpus using the same classifier. They should not be treated as a precise headcount of all nonconformance bugs MongoDB drivers ever had.
 
 ---
 
-## 5. Full Sonnet Re-classification
+## 5. Before/After YAML Test Analysis
 
-*[Results pending --- classification in progress.]*
-
-The full 13,538-ticket corpus is being re-classified with claude-sonnet-4-6 using the exp02 prompt (N gate). Results will be written to `data/classified_sonnet.csv`.
-
-### 5.1 Category distribution
-
-*[TBD]*
-
-### 5.2 Per-driver breakdown
-
-*[TBD]*
-
-### 5.3 Estimated true N count with 95% CI
-
-Using a ratio estimator with the gold-corpus precision (73.3%) and recall (68.8%), the 95% confidence interval on the true N count is:
-
-*[TBD --- formula: true_N ≈ model_N_count × (recall / precision), CI from bootstrap on gold set]*
-
----
-
-## 6. Before/After YAML Test Analysis
-
-### 6.1 Motivation
+### 5.1 Motivation
 
 The core causal claim of the paper: once YAML spec tests existed for a given spec area, drivers could no longer check in versions that failed those tests, so the nonconformance bug rate for that area should drop.
 
-### 6.2 Intervention dates
+### 5.2 Intervention dates
 
 For each spec area, the intervention date is the date YAML test files for that area were first committed to the `mongodb/specifications` repository. These dates will be mined from the specs repo git history.
 
-### 6.3 Analysis plan
+### 5.3 Analysis plan
 
 For each (spec_area, driver, year) cell in the classified data:
 - Count N tickets per year
@@ -189,15 +238,15 @@ For each (spec_area, driver, year) cell in the classified data:
 - Fit an interrupted time series model (or simple before/after comparison)
 - Report the rate change and 95% CI
 
-Candidate spec areas with enough tickets for reliable estimation (≥20 N tickets each from Haiku): CRUD, BSON, SDAM, Auth, CMAP, Cursors, Connection-String, Sessions, Wire-Protocol.
+Candidate spec areas with enough tickets for reliable estimation (≥20 N tickets each from Sonnet): CRUD (250), SDAM (242), BSON (229), Server-Selection (200), Connection-String (161), Sessions (114), Wire-Protocol (115), Write-Concern (118), Change-Streams (102), Auth (93), Cursors (93), Transactions (85), Retryable-Writes (78).
 
-### 6.4 Expected results
+### 5.4 Expected results
 
 *[TBD]*
 
 ---
 
-## 7. Cross-Driver Consistency
+## 6. Cross-Driver Consistency
 
 *[Placeholder for case studies from the X-category tickets and from tickets with `mentions_other_driver = true`.]*
 
@@ -212,8 +261,12 @@ Many per-driver tickets have `links: Issue split: DRIVERS-XXXX`. This means the 
 ### A.2 Confidence intervals
 
 Given classifier precision p and recall r on the gold corpus, an observed model count M for category C implies:
-- Estimated true count: T̂ = M × (r / p) ... *[actually needs derivation, TBD]*
-- Standard approach: use the ratio estimator; bootstrap CI from gold corpus
+
+- TP = M × p (true positives among model predictions)
+- Estimated true count: T̂ = TP / r = M × p / r
+- For N: T̂ = M × (0.733 / 0.688) ≈ M × 1.065
+
+95% CI: compute Wilson score interval on the model N rate (M / total), then apply the p/r correction to the lower and upper bounds. This CI accounts for binomial sampling uncertainty in the classifier rate but not for uncertainty in the gold-corpus precision/recall estimates themselves (which are based on a 200-ticket corpus).
 
 ### A.3 Reproducibility
 

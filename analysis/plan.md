@@ -45,7 +45,7 @@ Top spec areas across the 4,941 relevant tickets: CRUD 929, BSON 869, SDAM 405, 
 ## Phases
 
 - [x] **0. Setup.** PAT saved at `~/.jira_pat`, smoke-tested. venv at `analysis/.venv`. Project list pulled to `data/projects.json` (372 total Jira projects).
-- [x] **1. Volume planning.** `scripts/count_volume.py` ran. Bug+Improvement totals: **13,538 tickets** in the 2015-01-01 → 2026-04-28 window.
+- [x] **1. Volume planning.** `scripts/count_volume.py` ran. Bug+Improvement totals: **17,512 tickets** all-time through 2026-04-28. (An earlier run with a 2015-01-01 floor returned only 13,538; the floor was removed and the pull re-run.)
 - [x] **2. Bulk pull.** `scripts/pull_tickets.py` wrote `data/tickets/<PROJECT>.jsonl` for 22 driver projects.
 - [x] **3. Chunk + smoke test.** Split into 271 chunks of 50 tickets. Smoke-tested chunk_0001 (CDRIVER): 50/50 valid, sensible distribution.
 - [x] **4. Full classification.** All 271 chunks dispatched to Haiku subagents in parallel batches (typically 12--30 per dispatch). Initial 30-batch attempt at chunks 162--191 hit a wave of stream-idle timeouts; recovered by dropping to 12 per batch. Five chunks needed retry for missing files / short outputs / one bare-`unsure` JSON glitch. Final state: **13,538 / 13,538 classified, zero errors.**
@@ -64,7 +64,7 @@ Top spec areas across the 4,941 relevant tickets: CRUD 929, BSON 869, SDAM 405, 
 ## Phases
 
 - [x] **0. Setup.** PAT saved at `~/.jira_pat`, smoke-tested. venv at `analysis/.venv`. Project list pulled to `data/projects.json` (372 total Jira projects).
-- [x] **1. Volume planning.** `scripts/count_volume.py` ran across 25 candidate projects. Bug+Improvement totals: **13,538 tickets** in the 2015-01-01 → 2026-04-28 window. Per-project counts are in `data/pull.log` once the pull finishes.
+- [x] **1. Volume planning.** `scripts/count_volume.py` ran across 25 candidate projects. Bug+Improvement totals: **17,512 tickets** all-time through 2026-04-28 (an earlier run with a 2015-01-01 floor returned only 13,538). Per-project counts are in `data/pull.log` once the pull finishes.
 - [ ] **2. Bulk pull (in progress).** `scripts/pull_tickets.py` running in background for all driver projects, Bug + Improvement only. Writes `data/tickets/<PROJECT>.jsonl`.
 - [ ] **3. Classifier smoke test.** Run `scripts/classify.py` on ~50 tickets across 3 different-style projects (e.g. MGO, PYTHON, NODE). Hand-eyeball outputs. Iterate prompt if the labels look wrong.
 - [ ] **4. Full classification.** Run classifier across all ~13.5k tickets via parallel Haiku calls. Estimated cost: ~$30. Writes `data/classified.csv`.
@@ -98,8 +98,8 @@ Included (Bug + Improvement counts in the window, from `count_volume.py`):
 | RUBY | 1195 | |
 | CDRIVER | 1830 | libmongoc. |
 | CXX | 619 | C++ driver, wraps libmongoc. |
-| SWIFT | 322 | **Retired ~2022.** Window is 2015 → retirement. |
-| PERL | 253 | **Retired ~2020.** Window is 2015 → retirement. |
+| SWIFT | 322 | **Retired ~2022.** Window: project inception → retirement. |
+| PERL | 482 | **Retired ~2020.** Window: 2009 → retirement. |
 | HHVM | 85 | HipHop VM driver, Facebook-only history. |
 | SPEC | 0 | All resolved tickets are `Task` type; pull separately if we want spec-authoring history. |
 | DRIVERSOLD | 4 | Tiny historical project; ignore unless needed. |

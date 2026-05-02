@@ -41,7 +41,7 @@ PROJECTS = [
     "SPEC",
     "DRIVERSOLD",
 ]
-START = "2015-01-01"
+START = None  # None = no lower bound; pull all-time history
 END = "2026-04-28"
 
 # Fields we keep. resolutiondate is the standard Jira name for the
@@ -101,10 +101,12 @@ def shrink_issue(issue: dict) -> dict:
 
 
 def pull_project(project: str, types: str) -> int:
-    jql = (f'project = {project} AND issuetype in ({types}) AND '
-           f'resolution in (Fixed, Done) AND '
-           f'resolved >= "{START}" AND resolved <= "{END}" '
-           f'ORDER BY resolved ASC')
+    parts = [f'project = {project}', f'issuetype in ({types})',
+             'resolution in (Fixed, Done)',
+             f'resolved <= "{END}"']
+    if START:
+        parts.append(f'resolved >= "{START}"')
+    jql = " AND ".join(parts) + " ORDER BY resolved ASC"
     out = OUT_DIR / f"{project}.jsonl"
     n = 0
     start_at = 0

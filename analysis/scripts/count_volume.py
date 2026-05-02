@@ -30,7 +30,7 @@ PROJECTS = [
     "SPEC",
     "DRIVERSOLD",
 ]
-START = "2015-01-01"
+START = None  # None = no lower bound; pull all-time history
 END = "2026-04-28"
 
 
@@ -41,25 +41,30 @@ def count(jql: str) -> int:
     return r.json()["total"]
 
 
+def _date_clause():
+    parts = [f'resolved <= "{END}"']
+    if START:
+        parts.append(f'resolved >= "{START}"')
+    return " AND ".join(parts)
+
+
 def main():
-    print(f"Window: {START} → {END}\n")
+    print(f"Window: {START or '(no lower bound)'} → {END}\n")
     print(f"{'KEY':12s}  {'BUGS':>6s}  {'BUG+IMPROVE':>11s}  {'ALL_RESOLVED':>12s}")
     totals = {"bug": 0, "bug+imp": 0, "all": 0}
+    dc = _date_clause()
     for key in PROJECTS:
         try:
             bug = count(
                 f'project = {key} AND issuetype = Bug AND '
-                f'resolution in (Fixed, Done) AND '
-                f'resolved >= "{START}" AND resolved <= "{END}"'
+                f'resolution in (Fixed, Done) AND {dc}'
             )
             bug_imp = count(
                 f'project = {key} AND issuetype in (Bug, Improvement) AND '
-                f'resolution in (Fixed, Done) AND '
-                f'resolved >= "{START}" AND resolved <= "{END}"'
+                f'resolution in (Fixed, Done) AND {dc}'
             )
             all_resolved = count(
-                f'project = {key} AND resolution in (Fixed, Done) AND '
-                f'resolved >= "{START}" AND resolved <= "{END}"'
+                f'project = {key} AND resolution in (Fixed, Done) AND {dc}'
             )
         except requests.HTTPError as e:
             print(f"{key:12s}  ERROR  {e.response.status_code}: {e.response.text[:120]}")
