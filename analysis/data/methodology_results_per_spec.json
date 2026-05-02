@@ -1,0 +1,21 @@
+[
+  {
+    "name": "M14 per-spec event",
+    "n_specs": 12
+  },
+  {
+    "name": "M15 spec-detrended",
+    "pre_mean": -0.0015,
+    "post_short_mean": 0.0104,
+    "post_long_mean": 0.0066
+  },
+  {
+    "name": "M16 per-spec correlation"
+  },
+  {
+    "name": "M17 within-spec calendar",
+    "agg_with_rate": 0.1096,
+    "agg_without_rate": 0.0884,
+    "n_specs": 14
+  }
+]
