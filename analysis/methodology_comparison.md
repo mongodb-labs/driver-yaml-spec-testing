@@ -45,7 +45,8 @@ bugs, not fewer):
    tested cells.
 6. **M10 sync-lag scatter** — late-syncing drivers do not file
    measurably more bugs in their cells than early-syncing drivers
-   (Pearson r = 0.01). Driver size dominates the y-axis here.
+   (Pearson r = 0.01). Total ticket volume per project dominates the
+   y-axis, washing out any sync-timing signal.
 
 Two signals are ambiguous / weak:
 
@@ -267,7 +268,7 @@ more bugs than early-syncers.
 
 This is the cross-driver test that should support the hypothesis if tests
 were strongly causal. It doesn't. Plausible reasons:
-- Driver size dominates (big drivers have more bugs and sync faster)
+- Total ticket volume per project dominates (high-activity drivers have more bugs and sync faster)
 - Sync timing is endogenous (drivers sync when they need to, not when
   they should)
 - The hypothesis is wrong at the cross-driver level
@@ -303,9 +304,10 @@ In rough order of severity:
    discovery signal. We can't distinguish "would have been filed
    anyway" from "would never have been noticed."
 
-3. **Driver-size confound**. Bigger driver projects have more bugs and
-   tend to sync tests earlier. Both axes are dominated by driver size,
-   making M10 and M17 hard to interpret.
+3. **Project-activity confound**. Higher-activity driver projects file
+   more bugs and tend to sync tests earlier. Both axes of M10 and M17
+   are dominated by per-project ticket volume, making them hard to
+   interpret.
 
 4. **JSON-vs-YAML inflation**. Drivers that store both formats have
    inflated line counts (2× the real test surface). This biases line-count

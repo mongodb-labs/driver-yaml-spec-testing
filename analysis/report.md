@@ -10,7 +10,7 @@ MongoDB maintains ~12 native driver implementations (Python, Java, Node.js, C#, 
 
 **Research question:** Did the introduction of YAML spec tests (UTF and predecessor formats) reduce the rate of `driver_spec_nonconformance` bugs---bugs where a driver's behavior deviated from a published spec requirement?
 
-**Approach:** Mine all resolved Bug and Improvement tickets from MongoDB driver Jira projects (2009--2026, all-time history). Classify each ticket using an LLM classifier. Compute a before/after nonconformance rate per spec area, using the date YAML tests were first committed to the specs repository as the intervention date.
+**Approach:** Mine all resolved Bug and Improvement tickets from MongoDB driver Jira projects (2009--2026, all-time history). Classify each ticket using an LLM classifier. For each driver and spec area, track the monthly YAML/JSON test file counts synced to that driver's own repository (from `drivers_timeline.csv` and `drivers_submodule_timeline.csv`). Use the per-driver, per-spec first-sync date as the intervention point, and the continuous file/line counts to capture multi-phase sync patterns.
 
 ---
 
@@ -228,15 +228,11 @@ The core causal claim of the paper: once YAML spec tests existed for a given spe
 
 ### 5.2 Intervention dates
 
-For each spec area, the intervention date is the date YAML test files for that area were first committed to the `mongodb/specifications` repository. These dates will be mined from the specs repo git history.
+For each (driver, spec) pair, the intervention date is the first month that driver's own repository contained YAML/JSON test files for that spec area (i.e., when tests were synced from the specs repo to the driver repo). These dates come from the per-driver timeline data (`drivers_timeline.csv` and `drivers_submodule_timeline.csv`). Because syncs happen in phases---initial adoption, then incremental updates---the analysis uses continuous monthly file/line counts, not just a binary before/after split.
 
 ### 5.3 Analysis plan
 
-For each (spec_area, driver, year) cell in the classified data:
-- Count N tickets per year
-- Mark years as pre/post the YAML test introduction date for that spec area
-- Fit an interrupted time series model (or simple before/after comparison)
-- Report the rate change and 95% CI
+The panel (`panel.csv`) is keyed by (driver, spec, month), with monthly counts of nonconformance bugs created and YAML/JSON test files present in that driver's repo. 17 methodologies (M1--M17) examine the relationship from different angles---see `methodology_comparison.md` for full results.
 
 Candidate spec areas with enough tickets for reliable estimation (≥20 N tickets each from Sonnet): CRUD (250), SDAM (242), BSON (229), Server-Selection (200), Connection-String (161), Sessions (114), Wire-Protocol (115), Write-Concern (118), Change-Streams (102), Auth (93), Cursors (93), Transactions (85), Retryable-Writes (78).
 
