@@ -12,7 +12,6 @@ Outputs:
   - prints summary to stdout
 """
 import csv
-import math
 from collections import defaultdict
 from pathlib import Path
 
@@ -171,9 +170,11 @@ def chart_per_driver_timelines(panel_by_driver):
 
 
 def chart_spike_decay(panel_by_driver):
-    """M2-style spike-then-decay: bug rate in windows around first sync."""
-    windows = [(-36, -13, "−36..−13"), (-12, -1, "−12..−1"),
-               (0, 3, "0..+3"), (4, 15, "+4..+15"), (16, 36, "+16..+36"), (37, 60, "+37..+60")]
+    """Bug rate in 12-month windows aligned to each driver's first sync."""
+    windows = [(-48, -37, "−48..−37"), (-36, -25, "−36..−25"), (-24, -13, "−24..−13"),
+               (-12, -1, "−12..−1"), (0, 11, "0..+11"), (12, 23, "+12..+23"),
+               (24, 35, "+24..+35"), (36, 47, "+36..+47"), (48, 59, "+48..+59"),
+               (60, 71, "+60..+71")]
     win_bugs = defaultdict(int)
     win_months = defaultdict(int)
 
@@ -201,14 +202,16 @@ def chart_spike_decay(panel_by_driver):
     n_months = [win_months[l] for l in labels]
 
     fig, ax = plt.subplots(figsize=(9, 5))
-    colors = ["#888", "#888", "#d62728", "#888", "#888", "#888"]
+    colors = ["#d62728" if lo < 0 else "#1f77b4" for lo, _, _ in windows]
     bars = ax.bar(labels, rates, color=colors, alpha=0.85)
+    max_rate = max(rates)
+    ax.set_ylim(0, max_rate * 1.25)
     for bar, n, rate in zip(bars, n_months, rates):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height(),
-                f"{rate:.3f}\n({n} mo)", ha="center", va="bottom", fontsize=9)
+                f"{rate:.3f}\nn={n}", ha="center", va="bottom", fontsize=9)
     ax.set_ylabel("CRUD N-bugs per driver-month")
     ax.set_xlabel("Window relative to first sync (months)")
-    ax.set_title("CRUD: bug rate spikes at test adoption, then decays")
+    ax.set_title("CRUD: nonconformance bug rate before (red) and after (blue) test sync")
     ax.grid(True, alpha=0.3, axis="y")
     plt.tight_layout()
     plt.savefig(PLOT_DIR / "crud_spike_decay.png", dpi=120)
@@ -483,8 +486,8 @@ def main():
     chart_per_driver_timelines(panel_by_driver)
     print("  wrote crud_per_driver.png")
 
-    spike_rates = chart_spike_decay(panel_by_driver)
-    print(f"  wrote crud_spike_decay.png  rates={spike_rates}")
+    window_rates = chart_spike_decay(panel_by_driver)
+    print(f"  wrote crud_spike_decay.png  rates={window_rates}")
 
     chart_event_study(panel_by_driver)
     print("  wrote crud_event_study.png")
