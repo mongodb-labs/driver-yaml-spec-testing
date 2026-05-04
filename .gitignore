@@ -4,11 +4,9 @@
 .claude/
 __pycache__/
 *.pyc
-analysis/data/tickets/
-analysis/data/chunks/
+# Big external repos (re-clonable from upstream):
 analysis/data/specifications/
 analysis/data/driver_repos/
-analysis/data/sonnet_results/
 analysis/data/pull.log
 *.pat
 .env

@@ -1,0 +1,50 @@
+{"key":"PYTHON-4414","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-4941","category":"test_infrastructure","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"About test infrastructure, not driver behavior."}
+{"key":"PYTHON-4292","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Classified as perf-related, not spec conformance."}
+{"key":"PYTHON-1982","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Classified as doc-related, not spec conformance."}
+{"key":"PYTHON-4992","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-2560","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5020","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5011","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Classified as build-related, not spec conformance."}
+{"key":"PYTHON-5013","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Classified as doc-related, not spec conformance."}
+{"key":"PYTHON-5042","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Classified as ci-related, not spec conformance."}
+{"key":"PYTHON-5118","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Classified as doc-related, not spec conformance."}
+{"key":"PYTHON-5116","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5054","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-4579","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5177","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5179","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5166","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5168","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5172","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5202","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-4940","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Classified as support-related, not spec conformance."}
+{"key":"PYTHON-3636","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Classified as perf-related, not spec conformance."}
+{"key":"PYTHON-4493","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Classified as ci-related, not spec conformance."}
+{"key":"PYTHON-5226","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Classified as ci-related, not spec conformance."}
+{"key":"PYTHON-4471","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-4557","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5242","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5219","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5270","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-4924","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5297","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5288","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5310","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5314","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5306","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5309","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5362","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5406","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5405","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5414","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5212","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5126","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5421","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-4780","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-4677","category":"spec_ambiguity_or_gap","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Spec-related issue or ambiguity."}
+{"key":"PYTHON-5027","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5257","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5218","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":false,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5488","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":""}
+{"key":"PYTHON-5143","category":"not_relevant","spec_areas":[],"is_nonconformance":false,"mentions_other_driver":true,"preventable_by_yaml_test":false,"confidence":"medium","rationale":"Classified as support-related, not spec conformance."}
