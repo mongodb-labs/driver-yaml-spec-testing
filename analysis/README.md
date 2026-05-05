@@ -8,28 +8,12 @@ There are many specs that use the Unified Test Format or other YAML formats. We 
 
 We classified 17,512 resolved Jira tickets from 12 MongoDB driver projects using an LLM classifier (Claude Sonnet, validated against a 200-ticket gold corpus at F1=0.71 for the nonconformance category). We identified 254 CRUD nonconformance bugs across all drivers from 2009 to 2026. Separately, we mined each driver's git history to determine the month it first synced CRUD YAML test files from the shared specifications repository.
 
-For each driver, we aligned the monthly CRUD bug rate to the month of first test sync and binned into 12-month windows. The result (`data/plots/crud_spike_decay.png`):
+To control for composition effects (different drivers entering and leaving the sample over time), we restricted the analysis to a **balanced panel of 9 drivers** that each have at least 36 months of Jira ticket history before their first CRUD YAML test sync: C, C#, C++, Java, Node.js, Perl, PHP, Python, and Ruby. Three drivers (Go, Rust, Swift) were excluded because they lack sufficient pre-sync history. With a constant pool of 9 drivers, changes in bug counts over time reflect genuine trends rather than artifacts of the sample growing or shrinking.
 
-- **Pre-sync**, bug rates are noisy but average ~0.22 bugs per driver-month in the year before sync. The noise reflects drivers' different histories: e.g. JAVA began CRUD implementation years before YAML tests existed, while RUBY synced tests late and accumulated bugs in the interim.
-- **Post-sync**, every 12-month window is lower than the pre-sync average. The rate declines monotonically from 0.22 to 0.07 over six years, a **70% reduction**.
+The result (`data/plots/crud_spike_decay_balanced.png`) shows absolute CRUD nonconformance bug counts by calendar year for these 9 drivers:
 
-### Suggested figure caption
-
-> **Figure N.** CRUD nonconformance bug rate per driver-month in 12-month windows aligned to each driver's first sync of CRUD YAML test files. Red bars are pre-sync; blue bars are post-sync. The rate declines monotonically after test adoption, from 0.22 to 0.07 bugs/driver-month over six years (n=12 drivers, 254 total bugs).
-
-### Suggested paper paragraph
-
-> To quantify the effect of YAML spec tests on nonconformance bugs, we mined 17,512 resolved Jira tickets from 12 driver projects and classified each using an LLM (Claude Sonnet; F1=0.71 for nonconformance). For each driver we identified the month it first synced CRUD test files from the specifications repository. Figure N shows the CRUD bug rate in 12-month windows aligned to each driver's first sync date. Before test adoption, the rate averages 0.22 bugs/driver-month; after adoption it declines monotonically to 0.07 over six years---a 70% reduction. Drivers that synced early (JAVA, PERL, PYTHON in 2015) and late (CDRIVER, RUBY in 2018) both show the pattern. Full methodology and reproduction scripts are at [github.com/ajdavis/driver-yaml-spec-testing](https://github.com/ajdavis/driver-yaml-spec-testing).
-
-## Additional charts (not in paper)
-
-The analysis script also produces supporting charts:
-
-- `crud_per_driver.png` --- per-driver time series of monthly bugs and test file counts, with first-sync date marked
-- `crud_event_study.png` --- smoothed event study aligned to first sync
-- `crud_pre_post.png` --- per-driver pre- vs post-sync bug rates
-- `crud_dose_response.png` --- bug rate binned by test file count
-- `crud_aggregate.png` --- yearly bugs vs cumulative test files across all drivers
+- **2015 spike**: 59 bugs, more than double the 28 bugs in 2014. The CRUD prose spec was published in February 2015 and YAML tests were added the same month, triggering a wave of nonconformance discoveries across all drivers.
+- **Post-spike decline**: from 2016 onward, bug counts drop sharply and remain in the 13--20 range through 2020, roughly half the pre-spec baseline.
 
 ## What's here
 

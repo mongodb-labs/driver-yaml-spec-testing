@@ -198,18 +198,18 @@ def chart_spike_decay(panel_by_driver):
                 win_months[label] += 1
 
     labels = [w[2] for w in windows]
-    rates = [win_bugs[l] / win_months[l] if win_months[l] else 0 for l in labels]
-    n_months = [win_months[l] for l in labels]
+    rates = [win_bugs[l] / win_months[l] * 12 if win_months[l] else 0 for l in labels]
+    n_driver_years = [round(win_months[l] / 12, 1) for l in labels]
 
     fig, ax = plt.subplots(figsize=(9, 5))
     colors = ["#d62728" if lo < 0 else "#1f77b4" for lo, _, _ in windows]
     bars = ax.bar(labels, rates, color=colors, alpha=0.85)
     max_rate = max(rates)
     ax.set_ylim(0, max_rate * 1.25)
-    for bar, n, rate in zip(bars, n_months, rates):
+    for bar, n, rate in zip(bars, n_driver_years, rates):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height(),
-                f"{rate:.3f}\nn={n}", ha="center", va="bottom", fontsize=9)
-    ax.set_ylabel("CRUD N-bugs per driver-month")
+                f"{rate:.1f}\nn={n}", ha="center", va="bottom", fontsize=9)
+    ax.set_ylabel("CRUD N-bugs per driver-year")
     ax.set_xlabel("Window relative to first sync (months)")
     ax.set_title("CRUD: nonconformance bug rate before (red) and after (blue) test sync")
     ax.grid(True, alpha=0.3, axis="y")
@@ -278,8 +278,8 @@ def chart_pre_post_per_driver(panel_by_driver):
         driver_data.append({
             "driver": driver,
             "sync": sync,
-            "pre_rate": pre_bugs / pre_months if pre_months else 0,
-            "post_rate": post_bugs / post_months if post_months else 0,
+            "pre_rate": pre_bugs / pre_months * 12 if pre_months else 0,
+            "post_rate": post_bugs / post_months * 12 if post_months else 0,
             "pre_bugs": pre_bugs, "pre_months": pre_months,
             "post_bugs": post_bugs, "post_months": post_months,
         })
@@ -296,7 +296,7 @@ def chart_pre_post_per_driver(panel_by_driver):
     ax.set_xticks(x)
     ax.set_xticklabels([f"{d['driver']}\n({d['sync']})" for d in driver_data],
                        rotation=45, fontsize=8)
-    ax.set_ylabel("CRUD N-bugs per month")
+    ax.set_ylabel("CRUD N-bugs per year")
     ax.set_title("CRUD: pre-sync vs post-sync nonconformance bug rate per driver")
     ax.legend()
     ax.grid(True, alpha=0.3, axis="y")
@@ -334,7 +334,7 @@ def chart_file_count_vs_bugs(panel_by_driver):
                 bin_months["0"] += 1
 
     labels = [b[2] for b in bins]
-    rates = [bin_bugs[l] / bin_months[l] if bin_months[l] else 0 for l in labels]
+    rates = [bin_bugs[l] / bin_months[l] * 12 if bin_months[l] else 0 for l in labels]
     counts = [bin_months[l] for l in labels]
 
     fig, ax = plt.subplots(figsize=(9, 5))
@@ -342,12 +342,163 @@ def chart_file_count_vs_bugs(panel_by_driver):
     for bar, n in zip(bars, counts):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height(),
                 f"n={n}", ha="center", va="bottom", fontsize=9)
-    ax.set_ylabel("CRUD N-bugs per driver-month")
+    ax.set_ylabel("CRUD N-bugs per driver-year")
     ax.set_xlabel("CRUD test files synced to driver")
     ax.set_title("CRUD: bug rate by test file count")
     ax.grid(True, alpha=0.3, axis="y")
     plt.tight_layout()
     plt.savefig(PLOT_DIR / "crud_dose_response.png", dpi=120)
+    plt.close()
+
+
+def chart_spike_decay_balanced(panel_by_driver):
+    """Calendar-year bug rate using only the 9 drivers with ≥36 months
+    pre-sync history, so the driver pool is constant."""
+    MIN_PRE = 36
+
+    qualified = set()
+    for driver in DRIVERS:
+        rows = panel_by_driver.get(driver, [])
+        sync = first_sync(panel_by_driver, driver)
+        if not sync:
+            continue
+        sync_idx = month_index(sync)
+        d_first = month_index(rows[0]["month"])
+        if sync_idx - d_first >= MIN_PRE:
+            qualified.add(driver)
+
+    if not qualified:
+        return
+
+    year_bugs = defaultdict(int)
+    year_drivers = defaultdict(set)
+    for driver in qualified:
+        for r in panel_by_driver[driver]:
+            year = r["month"][:4]
+            year_bugs[year] += r["n_bugs"]
+            year_drivers[year].add(driver)
+
+    # Only show years where all qualified drivers are present.
+    n_drivers = len(qualified)
+    years = sorted(y for y in year_bugs if len(year_drivers[y]) == n_drivers)
+    counts = [year_bugs[y] for y in years]
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    bars = ax.bar(years, counts, color="#1f77b4", alpha=0.85)
+    max_count = max(counts) if counts else 1
+    ax.set_ylim(0, max_count * 1.25)
+    for bar, count in zip(bars, counts):
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max_count * 0.01,
+                f"{count}", ha="center", va="bottom", fontsize=9)
+    ax.set_ylabel("")
+    ax.set_xlabel("Year")
+    ax.set_title("CRUD spec nonconformance bugs per year")
+    ax.grid(True, alpha=0.3, axis="y")
+    ax.tick_params(axis="x", rotation=45)
+    plt.tight_layout()
+    plt.savefig(PLOT_DIR / "crud_spike_decay_balanced.png", dpi=120)
+    plt.close()
+
+
+def chart_spike_decay_calendar(panel_by_driver):
+    """Bug rate in calendar-year windows across all drivers."""
+    year_bugs = defaultdict(int)
+    year_drivers = defaultdict(set)
+
+    for driver in DRIVERS:
+        for r in panel_by_driver.get(driver, []):
+            year = r["month"][:4]
+            year_bugs[year] += r["n_bugs"]
+            year_drivers[year].add(driver)
+
+    years = sorted(year_bugs.keys())
+    n_drivers = [len(year_drivers[y]) for y in years]
+    rates = [year_bugs[y] / n_drivers[i] if n_drivers[i] else 0
+             for i, y in enumerate(years)]
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    bars = ax.bar(years, rates, color="#1f77b4", alpha=0.85)
+    max_rate = max(rates) if rates else 1
+    ax.set_ylim(0, max_rate * 1.25)
+    for bar, nd, rate in zip(bars, n_drivers, rates):
+        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max_rate * 0.01,
+                f"{rate:.1f}\n{nd} drivers", ha="center", va="bottom", fontsize=7)
+    ax.set_ylabel("CRUD N-bugs per driver-year")
+    ax.set_xlabel("Year")
+    ax.set_title("CRUD: nonconformance bug rate by calendar year")
+    ax.grid(True, alpha=0.3, axis="y")
+    ax.tick_params(axis="x", rotation=45)
+    plt.tight_layout()
+    plt.savefig(PLOT_DIR / "crud_spike_decay_calendar.png", dpi=120)
+    plt.close()
+
+
+def chart_spike_decay_per_driver(panel_by_driver):
+    """Per-driver small multiples of the spike-decay chart."""
+    drivers_with_sync = []
+    for driver in DRIVERS:
+        sync = first_sync(panel_by_driver, driver)
+        if sync:
+            drivers_with_sync.append(driver)
+
+    ncols = 3
+    nrows = (len(drivers_with_sync) + ncols - 1) // ncols
+    fig, axes = plt.subplots(nrows, ncols, figsize=(14, 3.2 * nrows),
+                             sharex=True, sharey=True)
+    axes = axes.flatten()
+
+    for i, driver in enumerate(drivers_with_sync):
+        ax = axes[i]
+        rows = panel_by_driver[driver]
+        sync = first_sync(panel_by_driver, driver)
+        sync_idx = month_index(sync)
+        d_first = month_index(rows[0]["month"])
+        d_last = month_index(rows[-1]["month"])
+        history = {r["month"]: r["n_bugs"] for r in rows}
+
+        # Build windows this driver has data for.
+        windows = []
+        for lo in range(-48, 72, 12):
+            hi = lo + 11
+            # Check this driver covers at least half the window.
+            covered = sum(1 for off in range(lo, hi + 1)
+                          if d_first <= sync_idx + off <= d_last)
+            if covered >= 6:
+                label = f"{lo:+d}" if lo < 0 else f"+{lo}"
+                windows.append((lo, hi, label))
+
+        if not windows:
+            ax.set_title(driver, fontsize=10)
+            continue
+
+        labels = [w[2] for w in windows]
+        rates = []
+        for lo, hi, label in windows:
+            total_bugs = 0
+            total_months = 0
+            for off in range(lo, hi + 1):
+                idx = sync_idx + off
+                if d_first <= idx <= d_last:
+                    m = index_to_month(idx)
+                    total_bugs += history.get(m, 0)
+                    total_months += 1
+            rates.append(total_bugs / total_months * 12 if total_months else 0)
+
+        colors = ["#d62728" if lo < 0 else "#1f77b4" for lo, _, _ in windows]
+        ax.bar(labels, rates, color=colors, alpha=0.85)
+        ax.set_title(f"{driver} (sync {sync})", fontsize=10)
+        ax.tick_params(axis="x", labelsize=7, rotation=45)
+        ax.grid(True, alpha=0.3, axis="y")
+
+    for j in range(i + 1, len(axes)):
+        axes[j].set_visible(False)
+
+    fig.supylabel("CRUD N-bugs per driver-year", fontsize=11)
+    fig.supxlabel("Window start (months relative to first sync)", fontsize=11)
+    fig.suptitle("CRUD: nonconformance bug rate per driver, 12-month windows",
+                 fontsize=13)
+    plt.tight_layout()
+    plt.savefig(PLOT_DIR / "crud_spike_decay_per_driver.png", dpi=120)
     plt.close()
 
 
@@ -443,8 +594,8 @@ def main():
         pre_months = sum(1 for r in rows if r["month"] < sync)
         post_bugs = sum(r["n_bugs"] for r in rows if r["month"] >= sync)
         post_months = sum(1 for r in rows if r["month"] >= sync)
-        pre_rate = pre_bugs / pre_months if pre_months else 0
-        post_rate = post_bugs / post_months if post_months else 0
+        pre_rate = pre_bugs / pre_months * 12 if pre_months else 0
+        post_rate = post_bugs / post_months * 12 if post_months else 0
         change = (post_rate - pre_rate) / pre_rate * 100 if pre_rate else float('inf')
         print(f"{driver:10s} {sync:8s} {pre_bugs:8d} {pre_months:6d} {pre_rate:8.3f}"
               f" {post_bugs:9d} {post_months:7d} {post_rate:9.3f} {change:+7.0f}%")
@@ -474,10 +625,10 @@ def main():
                     longrun_b += r["n_bugs"]
                     longrun_m += 1
 
-    print(f"Pre-sync:       {pre_b:3d} bugs / {pre_m:4d} driver-months = {pre_b/pre_m:.4f}")
-    print(f"Post-sync:      {post_b:3d} bugs / {post_m:4d} driver-months = {post_b/post_m:.4f}")
-    print(f"Spike (0..+5):  {spike_b:3d} bugs / {spike_m:4d} driver-months = {spike_b/spike_m:.4f}")
-    print(f"Long-run (>24): {longrun_b:3d} bugs / {longrun_m:4d} driver-months = {longrun_b/longrun_m:.4f}")
+    print(f"Pre-sync:       {pre_b:3d} bugs / {pre_m/12:.1f} driver-years = {pre_b/pre_m*12:.2f}/yr")
+    print(f"Post-sync:      {post_b:3d} bugs / {post_m/12:.1f} driver-years = {post_b/post_m*12:.2f}/yr")
+    print(f"Spike (0..+5):  {spike_b:3d} bugs / {spike_m/12:.1f} driver-years = {spike_b/spike_m*12:.2f}/yr")
+    print(f"Long-run (>24): {longrun_b:3d} bugs / {longrun_m/12:.1f} driver-years = {longrun_b/longrun_m*12:.2f}/yr")
     print(f"\nSpike / pre:    {(spike_b/spike_m)/(pre_b/pre_m):.1f}x")
     print(f"Long-run / pre: {(longrun_b/longrun_m)/(pre_b/pre_m):.2f}x")
 
@@ -500,6 +651,15 @@ def main():
 
     chart_aggregate_timeline(panel_by_driver, bugs)
     print("  wrote crud_aggregate.png")
+
+    chart_spike_decay_balanced(panel_by_driver)
+    print("  wrote crud_spike_decay_balanced.png")
+
+    chart_spike_decay_calendar(panel_by_driver)
+    print("  wrote crud_spike_decay_calendar.png")
+
+    chart_spike_decay_per_driver(panel_by_driver)
+    print("  wrote crud_spike_decay_per_driver.png")
 
     print("\nDone.")
 
