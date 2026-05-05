@@ -22,7 +22,10 @@ first test sync and binned into 12-month windows. The result
 (`data/plots/crud_spike_decay.png`):
 
 - **Pre-sync**, bug rates are noisy but average ~0.22 bugs per
-  driver-month in the year before sync.
+  driver-month in the year before sync. The noise reflects drivers'
+  different histories: e.g. JAVA began CRUD implementation years before
+  YAML tests existed, while RUBY synced tests late and accumulated bugs
+  in the interim.
 - **Post-sync**, every 12-month window is lower than the pre-sync
   average. The rate declines monotonically from 0.22 to 0.07 over six
   years, a **70% reduction**.
