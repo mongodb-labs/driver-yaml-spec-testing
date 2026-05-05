@@ -6,14 +6,25 @@ There are many specs that use the Unified Test Format or other YAML formats. We 
 
 ## Headline result
 
-We classified 17,512 resolved Jira tickets from 12 MongoDB driver projects using an LLM classifier (Claude Sonnet, validated against a 200-ticket gold corpus at F1=0.71 for the nonconformance category). We identified 254 CRUD nonconformance bugs across all drivers from 2009 to 2026. Separately, we mined each driver's git history to determine the month it first synced CRUD YAML test files from the shared specifications repository.
+We classified 17,512 resolved Jira tickets from 12 MongoDB driver projects using an LLM classifier (Claude Sonnet, validated against a 200-ticket gold corpus at F1=0.71 for the nonconformance category). We then manually reviewed all ~170 tickets the classifier labeled as CRUD nonconformance for the balanced panel (see below), reclassifying 44 that were actually coordinated spec rollouts (Improvement tickets with DRIVERS-project dependencies), initial feature implementations, or wrong-spec-area misclassifications. After cleanup, 210 CRUD nonconformance bugs remain across all drivers from 2009 to 2026.
+
+Separately, we mined each driver's git history to determine the month it first synced CRUD YAML test files from the shared specifications repository.
 
 To control for composition effects (different drivers entering and leaving the sample over time), we restricted the analysis to a **balanced panel of 9 drivers** that each have at least 36 months of Jira ticket history before their first CRUD YAML test sync: C, C#, C++, Java, Node.js, Perl, PHP, Python, and Ruby. Three drivers (Go, Rust, Swift) were excluded because they lack sufficient pre-sync history. With a constant pool of 9 drivers, changes in bug counts over time reflect genuine trends rather than artifacts of the sample growing or shrinking.
 
 The result (`data/plots/crud_spike_decay_balanced.png`) shows absolute CRUD nonconformance bug counts by calendar year for these 9 drivers:
 
-- **2015 spike**: 59 bugs, more than double the 28 bugs in 2014. The CRUD prose spec was published in February 2015 and YAML tests were added the same month, triggering a wave of nonconformance discoveries across all drivers.
-- **Post-spike decline**: from 2016 onward, bug counts drop sharply and remain in the 13--20 range through 2020, roughly half the pre-spec baseline.
+- **2015 spike**: 58 bugs, more than triple the 18 bugs in 2014. The CRUD prose spec was published in February 2015 and YAML tests were added the same month, triggering a wave of nonconformance discoveries across all drivers.
+- **Post-spike decline**: from 2016 onward, bug counts drop sharply and remain in the 11--17 range through 2020, roughly 30--40% below the pre-spec baseline.
+
+### Why nonconformance bugs persist after YAML test adoption
+
+All 9 drivers had synced CRUD YAML tests by mid-2019, yet 11--17 nonconformance bugs per year continued. Manual review of the 2019 tickets (17 bugs across 7 drivers) reveals why YAML tests reduce but do not eliminate nonconformance:
+
+- **Coverage gaps in the YAML test corpus.** Several bugs were in areas the YAML tests simply didn't cover. PERL-1127 notes explicitly: "there were no tests in the spec for this." Bulk write edge cases (pipeline updates, error index reporting) were underspecified in the test suite.
+- **Regressions introduced after tests passed.** CDRIVER-2992 is a regression from a prior fix that changed the BSON type of the arrayFilters option from array to document. The original YAML tests passed before that commit broke things.
+- **Behaviors hard to express declaratively.** Multi-server failure paths (CDRIVER-3313: retryable bulk write selects wrong server) and ordered-vs-unordered error handling (CDRIVER-3305) involve stateful server interactions that are difficult to encode in a YAML test.
+- **API-level vs wire-level conformance.** NODE-1812 (option named `returnOriginal` instead of spec-mandated `returnDocument`) is an API naming mismatch. The wire-level behavior was correct, but YAML tests validate wire behavior, not API surface naming.
 
 ## What's here
 
