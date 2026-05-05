@@ -1,80 +1,264 @@
-You are classifying a single MongoDB driver Jira ticket for a research paper on cross-language conformance testing of MongoDB drivers.
+You are classifying a single MongoDB driver Jira ticket for a research paper on cross-language conformance testing.
 
-Context. MongoDB maintains a dozen or so client driver libraries (PyMongo, mongo-java-driver, mongo-csharp-driver, mongo-go-driver, libmongoc, mongo-rust-driver, the Node driver, the Ruby driver, the PHP libraries, and historically Perl/Swift/Erlang/Haskell/HHVM/the mgo Go fork). Each driver implements a shared set of cross-language **specifications** ("specs") that define identical behavior. Major spec areas include:
+# Background
+
+MongoDB maintains a dozen or so native driver libraries (PyMongo, mongo-java-driver, mongo-csharp-driver, mongo-go-driver, libmongoc, mongo-rust-driver, Node.js driver, Ruby driver, PHP libraries, and historically Perl/Swift/Erlang/Haskell/HHVM/mgo). Each driver is supposed to implement a shared set of cross-language **specifications** that define identical behavior. Major spec areas:
 
 - BSON (binary serialization)
-- Server Discovery and Monitoring (SDAM) --- how a driver tracks the topology of a replica set or sharded cluster
-- Server Selection --- which server to send a given operation to
-- Connection Monitoring and Pooling (CMAP) --- the connection pool's lifecycle, eviction, sizing
+- Server Discovery and Monitoring (SDAM)
+- Server Selection
+- Connection Monitoring and Pooling (CMAP)
 - Connection String / URI parsing
 - DNS seedlist / SRV
 - Authentication (SCRAM, X.509, GSSAPI, MONGODB-AWS, MONGODB-OIDC)
-- CRUD --- insert/update/delete/find/aggregate semantics, including bulk write
-- Commands --- shape of the command-and-response wire protocol
-- Command Monitoring --- the public API for observing every command sent and received
-- Sessions --- logical sessions, session pooling
-- Causal Consistency
-- Transactions --- session-scoped multi-document transactions
+- CRUD (insert/update/delete/find/aggregate/bulk write)
+- Wire Protocol / Commands
+- Command Monitoring
+- Sessions, Causal Consistency
+- Transactions
 - Retryable Reads / Retryable Writes
 - Change Streams
 - Read Concern / Write Concern
-- Cursors / find / getMore / killCursors
-- Stable API (formerly "Versioned API")
+- Cursors (find / getMore / killCursors)
+- Stable API
 - Client-Side Field-Level Encryption (CSFLE) and Queryable Encryption
-- GridFS
-- Compression (wire-level)
-- Load Balancer support
-- OCSP (TLS revocation)
-- Logging (standardized log format across drivers)
-- OpenTelemetry / tracing
-- Index management
-- Collation
-- Initial DNS seedlist discovery (mongodb+srv://)
-- AbstractMongoCRUD operations against time-series and capped collections
+- GridFS, Compression, Load Balancer, OCSP, Logging, OpenTelemetry
+- Index Management, Collation, Time Series
 
-The driver tickets we care about for this paper fall into a few buckets. Your job is to classify which bucket the ticket fits into, conservatively.
+The Jira projects are: PYTHON, MOTOR, JAVA, JAVARS, JAVARX, SCALA, NODE, CSHARP, GODRIVER, MGO, RUST, PHPLIB, PHPC, PHP, RUBY, CDRIVER, CXX, SWIFT, PERL, HHVM, SPEC, DRIVERS, DRIVERSOLD.
 
 # Categories
 
-For each ticket, choose **exactly one** primary category. Be conservative: if the ticket is about packaging, build infra, CI, docs typos, dependency bumps, performance only, internal refactors with no behavioral change, support questions, or anything else not about cross-driver behavior or specification conformance, classify it as `not_relevant`.
+Choose **exactly one** primary category. Default to `not_relevant` when uncertain.
 
-- `driver_spec_nonconformance` --- The driver was not implementing a published spec correctly. Either the spec said X and the driver did Y, or the driver had a bug in code that implements a spec area, where the bug constitutes a deviation from the spec. Includes spec-level edge cases the driver got wrong.
+---
 
-- `cross_driver_inconsistency` --- The ticket explicitly references behavior in another driver, or implies "driver X does this but driver Y doesn't"; a fix to align with peer drivers; a divergence detected by spec test failures or by user reports of inconsistent behavior across languages.
+### `driver_spec_nonconformance`
+The driver implemented a spec area **incorrectly**. The spec says X; the driver did Y. Includes edge cases in spec coverage that the driver got wrong, missing required spec behaviors, and wrong values/types/semantics for spec-defined fields.
 
-- `avoidable_by_spec_conformance` --- A driver-internal bug in a component (connection pool, topology monitor, auth, retry logic, etc.) that **plausibly would have been avoided or caught earlier** if the driver had been more rigorously conformant to the relevant spec, or if a more carefully designed spec had existed. Example: a custom connection-pool implementation has a subtle deadlock that CMAP-conformant drivers would have caught earlier via shared CMAP spec tests. Use when the bug is in a *component* covered by a spec, even if the ticket doesn't mention the spec explicitly. This category is broader than `driver_spec_nonconformance`: the bug doesn't have to be a literal spec violation, just plausibly preventable by stronger spec discipline. We're particularly interested in old bugs that predate the relevant spec(s), which wouldn't have been released had there been specs and YAML tests. 
+**Yes:** "UpdateOne should return error when update has no modifier" (spec requirement). / "nUpdated should be nMatched in bulk write result" (spec terminology). / "Regex flags 'u' and 'l' dropped during BSON serialization" (BSON spec). / "$clusterTime element should use the greater of the two values" (Sessions spec). / "context cancellation before transaction commit should abort the transaction" (Transactions spec).
 
-- `spec_ambiguity_or_gap` --- A bug whose root cause is the spec itself --- it was ambiguous, silent on this case, or wrong; the fix involved amending the spec (or this ticket links to a DRIVERS or SPEC ticket that did so). Includes "common-mode failures" where multiple drivers implemented the spec the same wrong way.
+**Not this:** A performance bug, memory leak, or internal implementation detail that doesn't contradict a specific spec requirement → `not_relevant`. A systemic architectural flaw in a spec-covered component (pool leak, topology resource leak) that doesn't correspond to a specific spec rule → `not_relevant`.
 
-- `spec_authoring` --- The ticket itself is about writing or amending a specification (typically in DRIVERS or SPEC project), not fixing a driver bug.
+**Gate for N:** Before classifying as `driver_spec_nonconformance`, ask: *Can I name the specific rule in the spec that the driver violated?* If yes, N. If you can only say "this is in a spec-covered area" or "the spec probably covers this," classify as `not_relevant` instead.
 
-- `test_infrastructure` --- About the test runner, YAML test format, UTF schema, spec test infrastructure, or CI plumbing for running spec tests --- not about driver behavior. Includes UTF schema bugs.
+---
 
-- `not_relevant` --- Everything else. Build/packaging, doc typos, performance-only, internal refactors with no behavior change, language-binding issues that don't touch any spec area, vendored-dependency bumps, support questions filed as bugs, etc.
+### `cross_driver_inconsistency`
+The ticket was filed **because** two or more drivers behave differently from each other in a user-visible way. The prose explicitly names the comparison (e.g. "the Go driver does X but the Java driver does Y", "for consistency with pymongo", "rename to match other drivers"). A fix that explicitly aligns one driver with another.
 
-# Spec area
+**Yes:** "PHPC defaults to 'mongodb://127.0.0.1/' but HHVM defaults to 'mongodb://localhost'---for consistency, change HHVM." / "Rename CreateCollectionOptions::validation to validator to match Go and other drivers." / "Python driver succeeds auth with multiple replicas; C++ driver fails---investigate divergence."
 
-If the ticket touches a spec area(s), name them. Use the spec names listed above (lowercased, hyphen-separated, e.g. `cmap`, `sdam`, `retryable-writes`, `transactions`, `command-monitoring`, `csfle`, `connection-string`, `bson`, `crud`, `change-streams`, `sessions`, `causal-consistency`, `auth`, `auth-oidc`, `auth-aws`, `auth-scram`, `stable-api`, `gridfs`, `compression`, `load-balancer`, `ocsp`, `logging`, `opentelemetry`, `read-concern`, `write-concern`, `server-selection`, `dns-seedlist`, `wire-protocol`, `index-management`, `collation`, `cursors`). If no spec area applies (or you classified as `not_relevant` / `test_infrastructure`), use `none`.
+**Critical anti-patterns---these are NOT `cross_driver_inconsistency`:**
+- A ticket with `links: Issue split: DRIVERS-XXXX`---this means it's a child of a cross-driver coordination ticket (usually a spec rollout or test infrastructure change). The cross-driver coordination lives in DRIVERS; this per-driver ticket is about *implementing* that work in one driver.
+- A ticket with `links: Related: NODE-1234` or `Depends: DRIVERS-567`---a related link alone is not cross-driver inconsistency. Cross-driver tickets must be about a behavioral divergence between drivers, not about depending on or coordinating with another ticket.
+- A ticket that mentions another driver only as background context ("similar to how Java does it") but was filed for a different primary reason.
+- A ticket whose summary is about adding a missing feature or fixing a spec bug---that's `driver_spec_nonconformance`, even if it references another driver's implementation.
+
+---
+
+### `spec_ambiguity_or_gap`
+The **root cause** is in the spec, not just the driver. The spec was silent, ambiguous, or wrong on this case, and fixing it required amending the spec (or links to a DRIVERS/SPEC ticket that amended it). Common-mode failures where multiple drivers made the same mistake because the spec didn't address the case.
+
+**Yes:** "SDAM spec doesn't clarify what to do with wrong replica set name in Single topology---clarify and implement." / "Spec is silent on handling command errors before handshake completes---add guidance."
+
+---
+
+### `spec_authoring`
+The ticket is **about writing or amending a specification** (typically filed in DRIVERS or SPEC project), not about fixing a driver.
+
+---
+
+### `test_infrastructure`
+About the spec test runner, YAML test format, UTF schema, or CI plumbing for running spec tests. **Not** about driver behavior. Includes tickets to update, resync, enable, or disable YAML spec test files.
+
+**Yes:** "Resync read/write concern tests to add new read concern levels (see DRIVERS-567)." / "Update initial DNS seedlist discovery tests to support dedicated load balancer port (Issue split: DRIVERS-2224)." / "Update disabled change stream tests." / "Improve JSON tests for Binary Vector Subtype (Issue split: DRIVERS-3097)."
+
+Note: many T tickets have `links: Issue split: DRIVERS-XXXX` because the DRIVERS project coordinates cross-driver test rollouts and each driver gets a child ticket.
+
+---
+
+### `not_relevant`
+Everything else: build/packaging, CI failures, doc typos, dependency bumps, performance tuning, internal refactors with no behavior change, language-binding issues that don't touch a spec area, support questions, Coverity/static-analysis warnings, API ergonomics, ORM/LINQ mapping bugs.
+
+**When in doubt, classify as `not_relevant`.**
+
+---
+
+# Decision guide for common pitfalls
+
+1. **"Issue split: DRIVERS-XXXX" in links + `issuetype: Improvement`** → `not_relevant`. This is proactive spec-rollout work: the DRIVERS project coordinates a new requirement and each driver gets a child ticket to implement it. The driver was not doing anything *wrong*; the spec just added a new requirement. Not a nonconformance bug. (If the issuetype is Bug and the driver had wrong existing behavior, it may still be N.)
+
+2. **"Issue split: DRIVERS-XXXX" in links + `issuetype: Bug`** → likely `test_infrastructure` (spec test rollout) or `driver_spec_nonconformance` (driver had wrong behavior). Read the description to decide.
+
+3. **"Related: [other-driver-ticket]" in links** → not sufficient for X. Read the prose. If the prose doesn't say "Driver A does X but Driver B does Y," it's not X.
+
+4. **Ticket mentions another driver by name** → not automatically X. If the ticket is about the filing driver's own spec compliance, it's N even if another driver is mentioned for comparison.
+
+5. **Bug is in a spec-covered component** → not automatically N. Memory leaks, perf issues, CI failures, and docs bugs in spec-covered components are still `not_relevant` unless the bug contradicts a specific spec rule.
+
+6. **Ticket uses spec terminology** → not automatically N. Check whether the bug is a literal deviation from the spec. If the spec doesn't say anything about this behavior, it might be `not_relevant`.
+
+7. **Thin description** → classify as `not_relevant` with `confidence: low`, not as a spec category. Don't speculate.
+
+---
+
+# Spec areas
+
+If the ticket touches a spec area, name it using these identifiers (use `[]` if none apply):
+`bson`, `sdam`, `server-selection`, `cmap`, `connection-string`, `dns-seedlist`, `auth`, `auth-scram`, `auth-oidc`, `auth-aws`, `auth-x509`, `crud`, `wire-protocol`, `command-monitoring`, `sessions`, `causal-consistency`, `transactions`, `retryable-reads`, `retryable-writes`, `change-streams`, `read-concern`, `write-concern`, `cursors`, `stable-api`, `csfle`, `gridfs`, `compression`, `load-balancer`, `ocsp`, `logging`, `opentelemetry`, `index-management`, `collation`, `time-series`.
+
+Use only these identifiers. If a ticket's topic falls outside this vocabulary, use `[]` and put the topic in the rationale.
+
+---
 
 # Cross-driver evidence
 
-Set `mentions_other_driver: true` if the summary or description names another driver by language or product name (e.g. "the Java driver does X", "matches behavior of pymongo", "see NODE-1234"), OR if `links` contains a key from a different driver project than the ticket's own.
+Set `mentions_other_driver: true` only if the summary or description **explicitly** names another driver by language or product name (e.g. "the Java driver does X", "matches behavior of pymongo") OR if the driver for this ticket explicitly discusses divergence from another named driver. Do NOT set to true just because `links` contains a key from another project.
+
+---
 
 # Confidence
 
-Give a confidence in your classification: `high`, `medium`, or `low`. Use `low` when the description is very thin or the signal is weak. Default to `medium`.
+- `high`: clear signal in the summary or description.
+- `medium`: reasonable inference, some ambiguity.
+- `low`: thin description, weak signal, or you're genuinely unsure.
+
+Default to `medium`.
+
+---
 
 # Additional flags
 
-- `is_nonconformance` --- true if the ticket describes a literal deviation from a published spec (driver did X, spec said Y). Distinct from `category`: a ticket can be `cross_driver_inconsistency` and also a nonconformance.
-- `preventable_by_yaml_test` --- true if a YAML/UTF spec test could *plausibly* have caught this bug before release. False for things UTF cannot test by construction (build/packaging, perf, language ergonomics, internal refactors). Use `unsure` if the bug touches a spec area but the failure mode is hard to express as a YAML assertion.
+- `is_nonconformance`: true if the driver literally deviated from a published spec requirement (spec said X, driver did Y). Can be true with any category.
+- `preventable_by_yaml_test`: true if a YAML/UTF spec test asserting the correct behavior could plausibly have caught this before release. False for build/packaging, perf, docs, internal refactors. Use `"unsure"` if the bug touches a spec area but the failure mode is hard to express as a YAML assertion.
+
+---
 
 # Output format
 
-Output **only** a single JSON object on one line, with no markdown fence, no preamble, no explanation outside the JSON. Keys exactly:
+Output **only** a single JSON object on one line, no markdown fence, no preamble, no explanation outside the JSON:
 
 ```
-{"key": "<TICKET-KEY>", "category": "...", "spec_areas": ["...", "..."], "is_nonconformance": true|false, "mentions_other_driver": true|false, "preventable_by_yaml_test": true|false|"unsure", "confidence": "high|medium|low", "rationale": "<one short sentence, max 25 words>"}
+{"key": "<TICKET-KEY>", "category": "...", "spec_areas": ["...", "..."], "is_nonconformance": true|false, "mentions_other_driver": true|false, "preventable_by_yaml_test": true|false|"unsure", "confidence": "high|medium|low", "rationale": "<max 25 words citing the specific phrase or evidence you used>"}
 ```
 
-`spec_areas` is a JSON array (use `[]` if none). `key` must echo the ticket's Jira key exactly. The rationale must cite the specific signal you used (a phrase from the summary/description, or a linked ticket key). Do not speculate. If the ticket is too thin to classify, choose `not_relevant` with `confidence: low` and rationale `insufficient detail`.
+`spec_areas` is a JSON array (use `[]` if none). `key` must echo the ticket's Jira key exactly. If the ticket is too thin to classify, use `not_relevant` with `confidence: low` and rationale `insufficient detail`.
+
+---
+
+# Few-shot examples
+
+## Example 1 --- `driver_spec_nonconformance`
+
+Ticket: MGO-19
+Summary: Change nUpdated to nMatched in bulk api results
+Description: (none)
+Links: Related:DRIVERS-140
+
+```json
+{"key": "MGO-19", "category": "driver_spec_nonconformance", "spec_areas": ["crud"], "is_nonconformance": true, "mentions_other_driver": false, "preventable_by_yaml_test": true, "confidence": "high", "rationale": "Bulk write result field name deviates from spec term 'nMatched'; direct spec conformance fix."}
+```
+
+## Example 2 --- `driver_spec_nonconformance`
+
+Ticket: CSHARP-2219
+Summary: ClusterClockAdvancingCoreSession should return the greater of the two ClusterTimes
+Description: As part of gossiping the cluster time the driver appends a $clusterTime element to the command sent to the server. The code should return whichever ClusterTime is greater, but currently always appends the session's value.
+Links: (none)
+
+```json
+{"key": "CSHARP-2219", "category": "driver_spec_nonconformance", "spec_areas": ["sessions"], "is_nonconformance": true, "mentions_other_driver": false, "preventable_by_yaml_test": true, "confidence": "high", "rationale": "Sessions spec requires gossiping the greater ClusterTime; driver always uses session value instead."}
+```
+
+## Example 3 --- `cross_driver_inconsistency`
+
+Ticket: HHVM-237
+Summary: Default Manager URI to "mongodb://127.0.0.1/"
+Description: PHPC has defaulted to this value (via libmongoc) since 1.1.1. HHVM currently defaults to "mongodb://localhost", which might prefer IPv6 connections. For consistency, let's change the default URI to "mongodb://127.0.0.1/".
+Links: Depends:PHPLIB-220, Related:PHPC-746
+
+```json
+{"key": "HHVM-237", "category": "cross_driver_inconsistency", "spec_areas": ["connection-string"], "is_nonconformance": false, "mentions_other_driver": true, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "Explicit behavioral divergence: PHPC uses 127.0.0.1, HHVM uses localhost; filed to align them."}
+```
+
+## Example 4 --- `not_relevant` (implementation/architecture bug, not a spec rule violation)
+
+Ticket: NODE-1761
+Summary: Mongos topology leaks memory on server reconnect
+Description: I have been battling some weird memory leaks in our apps, and have found out that the culprit seems to be the mongodb driver which doesn't handle the Pool teardown properly after server reconnects. Memory grows unboundedly after repeated reconnects.
+Links: (none)
+
+```json
+{"key": "NODE-1761", "category": "not_relevant", "spec_areas": [], "is_nonconformance": false, "mentions_other_driver": false, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "Memory leak in pool teardown on reconnect; implementation bug with no specific contradicted spec rule."}
+```
+
+Note: being in a spec-covered component (connection pooling) does not make this `driver_spec_nonconformance`. The CMAP spec does not contain a rule saying "pools must not leak on reconnect"---it defines the pool API and lifecycle events. A resource leak is an implementation flaw, not a spec deviation.
+
+## Example 5 --- `spec_ambiguity_or_gap`
+
+Ticket: CSHARP-3061
+Summary: Clarify how a driver must handle wrong set name in single topology
+Description: The SDAM specification allows specifying replica set name in single topology but doesn't specify what to do when the server returns a different set name. Different drivers handle this differently. The fix requires updating the SDAM spec.
+Links: Depends:CSHARP-2962, Depends:DRIVERS-980
+
+```json
+{"key": "CSHARP-3061", "category": "spec_ambiguity_or_gap", "spec_areas": ["sdam"], "is_nonconformance": false, "mentions_other_driver": false, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "SDAM spec silent on wrong set name in single topology; fix required spec amendment via DRIVERS-980."}
+```
+
+## Example 6 --- `test_infrastructure`
+
+Ticket: CSHARP-4084
+Summary: Update initial DNS seedlist discovery tests to support dedicated load balancer port
+Description: This ticket was split from DRIVERS-2224, please see that ticket for a detailed description.
+Links: Issue split:DRIVERS-2224
+
+```json
+{"key": "CSHARP-4084", "category": "test_infrastructure", "spec_areas": ["dns-seedlist"], "is_nonconformance": false, "mentions_other_driver": false, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "Child ticket of DRIVERS-2224; updating DNS seedlist discovery test files, not fixing driver behavior."}
+```
+
+Note: "Issue split: DRIVERS-XXXX" means this is a per-driver child of a DRIVERS coordination ticket. Do NOT classify as `cross_driver_inconsistency`. The parent coordinates a test update across all drivers.
+
+## Example 7 --- `test_infrastructure`
+
+Ticket: SCALA-444
+Summary: Resync read write concern tests to add new read concern levels
+Description: See DRIVERS-567 for details.
+Links: Depends:SPEC-1152, Depends:DRIVERS-567
+
+```json
+{"key": "SCALA-444", "category": "test_infrastructure", "spec_areas": ["read-concern", "write-concern"], "is_nonconformance": false, "mentions_other_driver": false, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "Resync spec test files for new read concern levels; test infrastructure update, not a driver bug."}
+```
+
+## Example 8 --- `not_relevant` (performance/internal, not spec)
+
+Ticket: JAVA-4523
+Summary: Buffer is leaked from buffer pool on socket exception
+Description: In SocketStream#read, the ByteBuf is not released if an exception is thrown. As a result the buffer will be GC'd but will not be returned to the buffer pool. This is a performance issue, but there is no user-visible behavior change.
+Links: (none)
+
+```json
+{"key": "JAVA-4523", "category": "not_relevant", "spec_areas": [], "is_nonconformance": false, "mentions_other_driver": false, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "Netty buffer pool leak on exception; internal performance issue, no spec-defined behavior involved."}
+```
+
+## Example 9 --- `not_relevant` (related link to another project ≠ cross-driver)
+
+Ticket: PHPC-756
+Summary: fromJSON() should not evaluate bson_error_t.message as boolean
+Description: In bson.c, fromJson calls phongo_throw_exception with either a custom error message or a generic "Error parsing JSON" message. To determine which, it evaluates the error message string as a boolean---this is a PHP-specific bug.
+Links: Related:HHVM-273
+
+```json
+{"key": "PHPC-756", "category": "not_relevant", "spec_areas": [], "is_nonconformance": false, "mentions_other_driver": false, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "PHP-specific boolean-evaluation bug in JSON error handling; related link to HHVM-273 is a parallel fix, not a cross-driver inconsistency."}
+```
+
+## Example 10 --- `not_relevant` (CI / build failure)
+
+Ticket: PHPC-522
+Summary: make coveralls fails for PHP 7 builds on Travis CI
+Description: Coveralls CI integration fails for PHP 7 builds. See Travis CI log for details.
+Links: (none)
+
+```json
+{"key": "PHPC-522", "category": "not_relevant", "spec_areas": [], "is_nonconformance": false, "mentions_other_driver": false, "preventable_by_yaml_test": false, "confidence": "high", "rationale": "CI build failure; no driver behavior or spec involvement."}
+```
