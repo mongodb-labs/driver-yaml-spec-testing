@@ -5,6 +5,8 @@ Dilemma*: do YAML spec tests for the CRUD specification catch
 nonconformance bugs, and do fewer new bugs appear after a driver syncs
 those tests?
 
+There are many specs that use the Unified Test Format or other YAML formats. We chose the CRUD spec because it is complex, all 189 of its test files use the Unified Test Format (the most of any spec), and it has a long history of implementation (in some drivers) before the introduction of YAML tests.
+
 ## Headline result
 
 We classified 17,512 resolved Jira tickets from 12 MongoDB driver
@@ -97,7 +99,7 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-The Jira PAT is kept **outside** the repo:
+The Jira PAT (personal access token) is kept **outside** the repo:
 
 ```sh
 echo 'YOUR_TOKEN' > ~/.jira_pat
