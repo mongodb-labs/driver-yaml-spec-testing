@@ -31,7 +31,7 @@ analysis/
 │   ├── classify_sonnet.py    Sonnet classifier with exp02 N-gate prompt
 │   ├── drivers_timeline.py   per-driver monthly YAML/JSON test file counts
 │   ├── drivers_submodule_timeline.py  submodule-based drivers (JAVA, GODRIVER, PHPLIB)
-│   └── crud_analysis.py      CRUD-focused panel, charts, and summary stats
+│   └── crud_analysis.py      CRUD-focused panel, chart, and summary stats
 └── data/
     ├── tickets/              raw Jira JSONL dumps (gitignored)
     ├── chunks/               50-ticket chunks for subagent classification
@@ -41,7 +41,8 @@ analysis/
     ├── drivers_timeline.csv  per-driver monthly spec-test file counts
     ├── drivers_submodule_timeline.csv  submodule-based driver file counts
     ├── crud_panel.csv        (driver, month) panel for CRUD analysis
-    └── plots/crud_*.png      CRUD analysis charts
+    └── plots/
+        └── crud_spike_decay_balanced.png  balanced-panel bug chart
 ```
 
 ## Setup on a fresh macOS checkout
