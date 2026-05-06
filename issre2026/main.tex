@@ -276,6 +276,17 @@ Historically, MongoDB engineers manually synced YAML tests from the specs reposi
 
 Since 2020 our corpus of UTF tests has grown from a prototype with 7 files and 1046 lines of non-comment non-whitespace YAML, to 606 files with 124,168 lines. Fig.~\ref{fig:count_utf_lines} shows the major events in UTF's growth: we created UTF (a), ported the CRUD v2 tests (b), added Client-Side Operations Timeout tests (c), ported transactions tests (d), ported remaining CRUD v1 and retryable writes/reads tests (e), and ported CSFLE (f). Most drivers have replaced most of their runners for the various test formats in favor of one UTF runner, and they deleted test code on net. The Rust driver had the most dramatic savings of 4066 LOC (Fig.~\ref{fig:utf_driver_code_changes}).
 
+\subsection{Effect on nonconformance bugs}
+
+To measure whether YAML spec tests reduce nonconformance bugs, we mined 13,153 resolved Jira tickets and classified each using an LLM (Claude Sonnet; F1=0.71 for the nonconformance category against a 200-ticket gold corpus), followed by a manual review. We analyzed the 9 drivers (C, C\#, C++, Java, Node.js, Perl, PHP, Python, Ruby) with at least 36~months of pre-spec ticket history. Fig.~\ref{fig:crud_bugs} shows CRUD nonconformance bugs per year. The CRUD prose specification and its first YAML tests were both published in 2015. Bugs filed before then can be correctly classified as nonconformance bugs, although there was no written spec. E.g., if drivers should send a \texttt{\$maxScan} key to the server but one sends \texttt{\$maxscan} instead (with a lowercase ``s''), this behavior is nonconformance to the unwritten spec. Bugs spiked in 2015 as the new spec and tests revealed nonconformance across all drivers. From 2016 onward, fewer new bugs were filed than before the tests. A bump in 2019 (17 bugs) reflects coverage gaps in the YAML test corpus: several bugs involved bulk write edge cases that were not YAML-tested, or multi-server failure paths that are difficult to express declaratively.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\columnwidth]{FIG/crud_spike_decay_balanced.pdf}
+    \caption{CRUD spec nonconformance bugs per year for 9 drivers. The CRUD spec and YAML tests were published in 2015.}
+    \label{fig:crud_bugs}
+\end{figure}
+
 \subsection{Testing the UTF test runner and its tests}
 
 The UTF test runner has its own set of tests, which are divided into three categories: ``invalid'' test files are expected to fail JSON schema validation, ``valid-fail'' test files should pass schema validation but fail at runtime (e.g.\ an assertion failure), and ``valid-pass'' tests should pass without error. Collectively, these tests can assert correctness of the JSON schema. The set of ``valid-fail'' and ``valid-pass'' tests can additionally be used to verify correctness of a driver's test runner.
