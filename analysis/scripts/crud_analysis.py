@@ -159,12 +159,22 @@ def chart_spike_decay_balanced(panel_by_driver):
     for bar, count in zip(bars, counts):
         ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max_count * 0.01,
                 f"{count}", ha="center", va="bottom", fontsize=9)
+    idx_2015 = years.index("2015")
+    bar_2015 = bars[idx_2015]
+    ax.annotate("CRUD spec &\ntests published",
+                xy=(bar_2015.get_x() + bar_2015.get_width() * 1.1,
+                    bar_2015.get_height() * 0.75),
+                xytext=(bar_2015.get_x() + bar_2015.get_width() * 2.5,
+                        max_count * 0.5),
+                fontsize=12, ha="center",
+                arrowprops=dict(arrowstyle="->", color="black", lw=2))
     ax.set_ylabel("")
     ax.set_xlabel("Year")
     ax.set_title("CRUD spec nonconformance bugs per year")
     ax.grid(True, alpha=0.3, axis="y")
     ax.tick_params(axis="x", rotation=45)
     plt.tight_layout()
+    plt.savefig(PLOT_DIR / "crud_spike_decay_balanced.pdf")
     plt.savefig(PLOT_DIR / "crud_spike_decay_balanced.png", dpi=120)
     plt.close()
 
