@@ -1,5 +1,4 @@
-"""CRUD-focused analysis: do YAML spec tests catch nonconformance bugs,
-and do fewer new bugs appear after a driver syncs CRUD tests?
+"""CRUD-focused analysis: do YAML spec tests reduce nonconformance bug rates?
 
 Reads:
   - data/classified_sonnet.csv (LLM-classified tickets)
@@ -8,8 +7,20 @@ Reads:
 
 Outputs:
   - data/crud_panel.csv (driver × month panel, CRUD only)
-  - data/plots/crud_spike_decay_balanced.png (balanced-panel bug chart)
-  - prints summary to stdout
+  - data/plots/crud_late5.png/.pdf  pre/post bug-rate chart for 5 late-syncing drivers
+  - prints per-driver summary to stdout
+
+Analysis approach
+-----------------
+The 5 "late-syncing" drivers (NODE, CXX, CDRIVER, RUBY, PHPLIB) all adopted CRUD
+YAML tests after the CRUD spec was already published (Feb 2015).  For each of these
+drivers the pre-sync window ("spec published, no YAML tests") and the post-sync
+window ("spec plus YAML tests") both start after the spec existed, so the comparison
+isolates the effect of the tests rather than the effect of the spec itself.
+
+The 4 early-syncing drivers (CSHARP, JAVA, PERL, PYTHON --- all synced 2015-03)
+are excluded from this comparison: they adopted tests almost simultaneously with
+the spec publication, leaving only one month of post-spec pre-sync history.
 """
 import csv
 from collections import defaultdict
@@ -18,6 +29,7 @@ from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 PLOT_DIR = DATA / "plots"
@@ -25,6 +37,12 @@ PLOT_DIR = DATA / "plots"
 DRIVERS = ["CDRIVER", "CSHARP", "CXX", "GODRIVER", "JAVA", "NODE",
            "PERL", "PHPLIB", "PYTHON", "RUBY", "RUST", "SWIFT"]
 SUBMODULE_DRIVERS = {"JAVA", "GODRIVER", "PHPLIB"}
+
+# 5 late-syncing drivers: synced CRUD YAML tests after the CRUD spec was published,
+# giving a clean pre/post comparison window.
+LATE_DRIVERS = {"NODE", "CXX", "CDRIVER", "RUBY", "PHPLIB"}
+LATE_LABELS = {"NODE": "Node.js", "CXX": "C++", "CDRIVER": "C", "RUBY": "Ruby", "PHPLIB": "PHP"}
+CRUD_SPEC_PUBLISHED = "2015-02"
 
 SPEC_ALIASES = {"bson": "bson-corpus", "sdam": "server-discovery-and-monitoring"}
 
@@ -97,7 +115,6 @@ def month_iter(start, end):
 
 
 def build_panel(bugs, assets, ranges):
-    """Build rectangular (driver, month) panel for CRUD."""
     rows = []
     for driver in DRIVERS:
         if driver not in ranges:
@@ -120,62 +137,68 @@ def first_sync(panel_by_driver, driver):
     return None
 
 
-def chart_spike_decay_balanced(panel_by_driver):
-    """Calendar-year bug rate using only the 9 drivers with ≥36 months
-    pre-sync history, so the driver pool is constant."""
-    MIN_PRE = 36
+def chart_late5(panel_by_driver):
+    """Pre/post CRUD bug-rate chart for the 5 late-syncing drivers.
 
-    qualified = set()
-    for driver in DRIVERS:
-        rows = panel_by_driver.get(driver, [])
-        sync = first_sync(panel_by_driver, driver)
-        if not sync:
-            continue
-        sync_idx = month_index(sync)
-        d_first = month_index(rows[0]["month"])
-        if sync_idx - d_first >= MIN_PRE:
-            qualified.add(driver)
+    Pre-sync window: CRUD spec publication (2015-02) through each driver's sync month.
+    Post-sync window: sync month onwards.
+    Both windows have the published CRUD spec; the only difference is YAML test presence.
+    NODE is an outlier (post-sync rate higher) driven by a BulkWrite result-shape
+    conformance cluster (2019--2022) that YAML tests do not catch because they validate
+    wire protocol, not language-level result object structure.
+    """
+    sync_dates = {d: first_sync(panel_by_driver, d) for d in LATE_DRIVERS}
+    drivers_ordered = sorted(LATE_DRIVERS, key=lambda d: sync_dates[d])
 
-    if not qualified:
-        return
+    pre_rates, post_rates, pre_mo, post_mo = {}, {}, {}, {}
+    for d in drivers_ordered:
+        pre = [r for r in panel_by_driver[d]
+               if r["month"] >= CRUD_SPEC_PUBLISHED and r["month"] < sync_dates[d]]
+        post = [r for r in panel_by_driver[d] if r["month"] >= sync_dates[d]]
+        pb, pm = sum(r["n_bugs"] for r in pre), len(pre)
+        ob, om = sum(r["n_bugs"] for r in post), len(post)
+        pre_rates[d] = pb / pm * 12 if pm else 0
+        post_rates[d] = ob / om * 12 if om else 0
+        pre_mo[d], post_mo[d] = pm, om
 
-    year_bugs = defaultdict(int)
-    year_drivers = defaultdict(set)
-    for driver in qualified:
-        for r in panel_by_driver[driver]:
-            year = r["month"][:4]
-            year_bugs[year] += r["n_bugs"]
-            year_drivers[year].add(driver)
-
-    # Only show years where all qualified drivers are present.
-    n_drivers = len(qualified)
-    years = sorted(y for y in year_bugs if len(year_drivers[y]) == n_drivers)
-    counts = [year_bugs[y] for y in years]
+    x = np.arange(len(drivers_ordered))
+    width = 0.35
 
     fig, ax = plt.subplots(figsize=(10, 5))
-    bars = ax.bar(years, counts, color="#1f77b4", alpha=0.85)
-    max_count = max(counts) if counts else 1
-    ax.set_ylim(0, max_count * 1.25)
-    for bar, count in zip(bars, counts):
-        ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max_count * 0.01,
-                f"{count}", ha="center", va="bottom", fontsize=9)
-    idx_2015 = years.index("2015")
-    bar_2015 = bars[idx_2015]
-    ax.annotate("CRUD spec &\ntests published",
-                xy=(bar_2015.get_x() + bar_2015.get_width() * 1.1,
-                    bar_2015.get_height() * 0.75),
-                xytext=(bar_2015.get_x() + bar_2015.get_width() * 2.5,
-                        max_count * 0.5),
-                fontsize=12, ha="center",
-                arrowprops=dict(arrowstyle="->", color="black", lw=2))
-    ax.set_ylabel("")
-    ax.set_xlabel("Year")
-    ax.set_title("CRUD spec nonconformance bugs per year")
+    ax.bar(x - width / 2,
+           [pre_rates[d] for d in drivers_ordered],
+           width, label="Pre-sync (spec published, no YAML tests)",
+           color="#d62728", alpha=0.85)
+    bars_post = ax.bar(x + width / 2,
+                       [post_rates[d] for d in drivers_ordered],
+                       width, label="Post-sync (YAML tests adopted)",
+                       color="#1f77b4", alpha=0.85)
+
+    max_rate = max(list(pre_rates.values()) + list(post_rates.values()))
+    ax.set_ylim(0, max_rate * 1.35)
+
+    for xi, d in zip(x, drivers_ordered):
+        v = pre_rates[d]
+        ax.text(xi - width / 2, v + max_rate * 0.01,
+                f"{v:.1f}\n({pre_mo[d]}mo)", ha="center", va="bottom", fontsize=8)
+    for bar, d in zip(bars_post, drivers_ordered):
+        v = post_rates[d]
+        chg = (v - pre_rates[d]) / pre_rates[d] * 100 if pre_rates[d] else 0
+        ax.text(bar.get_x() + bar.get_width() / 2, v + max_rate * 0.01,
+                f"{v:.1f}\n({chg:+.0f}%)", ha="center", va="bottom", fontsize=8)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(
+        [f"{LATE_LABELS[d]}\n(synced {sync_dates[d]})" for d in drivers_ordered],
+        fontsize=9)
+    ax.set_ylabel("CRUD nonconformance bugs / year")
+    ax.set_title("CRUD bug rate/year before vs. after YAML test adoption\n"
+                 "5 late-syncing drivers; pre-sync window starts at spec publication (Feb 2015)")
+    ax.legend()
     ax.grid(True, alpha=0.3, axis="y")
-    ax.tick_params(axis="x", rotation=45)
     plt.tight_layout()
-    plt.savefig(PLOT_DIR / "crud_spike_decay_balanced.pdf")
-    plt.savefig(PLOT_DIR / "crud_spike_decay_balanced.png", dpi=120)
+    plt.savefig(PLOT_DIR / "crud_late5.pdf")
+    plt.savefig(PLOT_DIR / "crud_late5.png", dpi=120)
     plt.close()
 
 
@@ -198,7 +221,6 @@ def main():
     panel = build_panel(bugs, assets, ranges)
     print(f"  {len(panel)} total (driver, month) cells")
 
-    # Write panel CSV
     out = DATA / "crud_panel.csv"
     with out.open("w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["driver", "month", "n_bugs", "n_files", "n_lines"])
@@ -206,15 +228,13 @@ def main():
         w.writerows(panel)
     print(f"  wrote {out}")
 
-    # Organize by driver
     panel_by_driver = defaultdict(list)
     for r in panel:
         panel_by_driver[r["driver"]].append(r)
     for d in panel_by_driver:
         panel_by_driver[d].sort(key=lambda r: r["month"])
 
-    # Per-driver summary
-    print("\n=== Per-driver summary ===\n")
+    print("\n=== Per-driver summary (all pre-sync vs all post-sync) ===\n")
     print(f"{'Driver':10s} {'Sync':8s} {'Pre bugs':>8s} {'Pre mo':>6s} {'Pre rate':>8s}"
           f" {'Post bugs':>9s} {'Post mo':>7s} {'Post rate':>9s} {'Change':>8s}")
     for driver in DRIVERS:
@@ -233,42 +253,25 @@ def main():
         print(f"{driver:10s} {sync:8s} {pre_bugs:8d} {pre_months:6d} {pre_rate:8.3f}"
               f" {post_bugs:9d} {post_months:7d} {post_rate:9.3f} {change:+7.0f}%")
 
-    # Aggregate pre/post/spike/longrun
-    print("\n=== Aggregate rates ===\n")
-    pre_b, pre_m, post_b, post_m = 0, 0, 0, 0
-    spike_b, spike_m, longrun_b, longrun_m = 0, 0, 0, 0
-    for driver in DRIVERS:
+    print("\n=== Late-syncing drivers: post-spec pre-sync vs post-sync rates ===\n")
+    print(f"{'Driver':10s} {'Sync':8s} {'Pre bugs':>8s} {'Pre mo':>6s} {'Pre rate':>9s}"
+          f" {'Post bugs':>9s} {'Post mo':>7s} {'Post rate':>9s} {'Change':>8s}")
+    for driver in sorted(LATE_DRIVERS, key=lambda d: first_sync(panel_by_driver, d)):
         sync = first_sync(panel_by_driver, driver)
-        if not sync:
-            continue
-        sync_idx = month_index(sync)
-        for r in panel_by_driver[driver]:
-            idx = month_index(r["month"])
-            rel = idx - sync_idx
-            if rel < 0:
-                pre_b += r["n_bugs"]
-                pre_m += 1
-            else:
-                post_b += r["n_bugs"]
-                post_m += 1
-                if 0 <= rel <= 5:
-                    spike_b += r["n_bugs"]
-                    spike_m += 1
-                elif rel > 24:
-                    longrun_b += r["n_bugs"]
-                    longrun_m += 1
+        rows = panel_by_driver[driver]
+        pre = [r for r in rows if r["month"] >= CRUD_SPEC_PUBLISHED and r["month"] < sync]
+        post = [r for r in rows if r["month"] >= sync]
+        pb, pm = sum(r["n_bugs"] for r in pre), len(pre)
+        ob, om = sum(r["n_bugs"] for r in post), len(post)
+        pr = pb / pm * 12 if pm else 0
+        or_ = ob / om * 12 if om else 0
+        chg = (or_ - pr) / pr * 100 if pr else float('inf')
+        print(f"{driver:10s} {sync:8s} {pb:8d} {pm:6d} {pr:9.3f}"
+              f" {ob:9d} {om:7d} {or_:9.3f} {chg:+7.0f}%")
 
-    print(f"Pre-sync:       {pre_b:3d} bugs / {pre_m/12:.1f} driver-years = {pre_b/pre_m*12:.2f}/yr")
-    print(f"Post-sync:      {post_b:3d} bugs / {post_m/12:.1f} driver-years = {post_b/post_m*12:.2f}/yr")
-    print(f"Spike (0..+5):  {spike_b:3d} bugs / {spike_m/12:.1f} driver-years = {spike_b/spike_m*12:.2f}/yr")
-    print(f"Long-run (>24): {longrun_b:3d} bugs / {longrun_m/12:.1f} driver-years = {longrun_b/longrun_m*12:.2f}/yr")
-    print(f"\nSpike / pre:    {(spike_b/spike_m)/(pre_b/pre_m):.1f}x")
-    print(f"Long-run / pre: {(longrun_b/longrun_m)/(pre_b/pre_m):.2f}x")
-
-    # Generate chart
     print("\nGenerating chart...")
-    chart_spike_decay_balanced(panel_by_driver)
-    print("  wrote crud_spike_decay_balanced.png")
+    chart_late5(panel_by_driver)
+    print("  wrote crud_late5.png / crud_late5.pdf")
 
     print("\nDone.")
 
