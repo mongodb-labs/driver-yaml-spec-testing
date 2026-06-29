@@ -23,6 +23,7 @@ are excluded from this comparison: they adopted tests almost simultaneously with
 the spec publication, leaving only one month of post-spec pre-sync history.
 """
 import csv
+import json
 from collections import defaultdict
 from pathlib import Path
 
@@ -33,6 +34,7 @@ import numpy as np
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 PLOT_DIR = DATA / "plots"
+OPUS_JSONL = DATA / "reclassified_opus.jsonl"
 
 DRIVERS = ["CDRIVER", "CSHARP", "CXX", "GODRIVER", "JAVA", "NODE",
            "PERL", "PHPLIB", "PYTHON", "RUBY", "RUST", "SWIFT"]
@@ -47,28 +49,64 @@ CRUD_SPEC_PUBLISHED = "2015-02"
 SPEC_ALIASES = {"bson": "bson-corpus", "sdam": "server-discovery-and-monitoring"}
 
 
+def load_opus_overlay() -> dict:
+    """Return {key: result_dict} from reclassified_opus.jsonl, or {} if absent."""
+    if not OPUS_JSONL.exists():
+        return {}
+    overlay = {}
+    with OPUS_JSONL.open() as f:
+        for line in f:
+            try:
+                r = json.loads(line)
+                overlay[r["key"]] = r
+            except (json.JSONDecodeError, KeyError):
+                pass
+    return overlay
+
+
 def month_index(m):
     y, mo = int(m[:4]), int(m[5:7])
     return (y - 2000) * 12 + (mo - 1)
 
 
-def load_crud_bugs():
-    """Returns {(driver, month): n_bugs}."""
+def load_crud_bugs(opus_overlay: dict | None = None) -> dict:
+    """Return {(driver, month): n_bugs}.
+
+    When opus_overlay is provided (keyed by Jira key), it overrides Sonnet's
+    classification for any ticket it covers.  A ticket counts as a CRUD bug iff:
+      - It appears in opus_overlay with primary_spec=="crud" and
+        bug_type=="conformance_bug"  (Opus-reviewed tickets), OR
+      - It does NOT appear in the overlay, has category==driver_spec_nonconformance,
+        and "crud" in spec_areas  (Sonnet-only tickets, typically other drivers).
+    This lets pass-1 bugs be downgraded and pass-2/3 false-negatives be added.
+    """
+    if opus_overlay is None:
+        opus_overlay = {}
+
     counts = defaultdict(int)
     with (DATA / "classified_sonnet.csv").open() as f:
         for r in csv.DictReader(f):
-            if r["category"] != "driver_spec_nonconformance":
-                continue
-            specs = [SPEC_ALIASES.get(s, s) for s in (r.get("spec_areas") or "").split("|") if s]
-            if "crud" not in specs:
+            project = r["project"]
+            if project not in DRIVERS:
                 continue
             created = r.get("created", "")
             if not created or len(created) < 7:
                 continue
-            project = r["project"]
-            if project not in DRIVERS:
-                continue
-            counts[(project, created[:7])] += 1
+            key = r["key"]
+
+            if key in opus_overlay:
+                opus = opus_overlay[key]
+                if (opus.get("primary_spec") == "crud"
+                        and opus.get("bug_type") == "conformance_bug"):
+                    counts[(project, created[:7])] += 1
+            else:
+                if r["category"] != "driver_spec_nonconformance":
+                    continue
+                specs = [SPEC_ALIASES.get(s, s)
+                         for s in (r.get("spec_areas") or "").split("|") if s]
+                if "crud" in specs:
+                    counts[(project, created[:7])] += 1
+
     return counts
 
 
@@ -205,8 +243,14 @@ def chart_late5(panel_by_driver):
 def main():
     PLOT_DIR.mkdir(parents=True, exist_ok=True)
 
+    opus_overlay = load_opus_overlay()
+    if opus_overlay:
+        print(f"Opus overlay loaded: {len(opus_overlay)} tickets")
+    else:
+        print("No Opus overlay found; using Sonnet classifications only")
+
     print("Loading CRUD bugs from classified_sonnet.csv...")
-    bugs = load_crud_bugs()
+    bugs = load_crud_bugs(opus_overlay)
     total_bugs = sum(bugs.values())
     print(f"  {total_bugs} CRUD nonconformance bugs across {len(set(d for d, m in bugs))} drivers")
 
