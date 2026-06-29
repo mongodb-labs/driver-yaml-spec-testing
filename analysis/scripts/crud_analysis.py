@@ -227,11 +227,11 @@ def chart_late5(panel_by_driver):
 
     ax.set_xticks(x)
     ax.set_xticklabels(
-        [f"{LATE_LABELS[d]}\n(synced {sync_dates[d]})" for d in drivers_ordered],
+        [f"{LATE_LABELS[d]}\n(adopted {sync_dates[d]})" for d in drivers_ordered],
         fontsize=9)
     ax.set_ylabel("CRUD nonconformance bugs / year")
     ax.set_title("CRUD bug rate/year before vs. after YAML test adoption\n"
-                 "5 late-syncing drivers; pre-sync window starts at spec publication (Feb 2015)")
+                 "Five late-syncing drivers; pre-sync window starts at spec publication (Feb 2015)")
     ax.legend()
     ax.grid(True, alpha=0.3, axis="y")
     plt.tight_layout()
