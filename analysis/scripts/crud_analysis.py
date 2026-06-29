@@ -205,11 +205,11 @@ def chart_late5(panel_by_driver):
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.bar(x - width / 2,
            [pre_rates[d] for d in drivers_ordered],
-           width, label="Pre-sync (spec published, no YAML tests)",
+           width, label="Pre-adoption (spec published, no YAML tests)",
            color="#d62728", alpha=0.85)
     bars_post = ax.bar(x + width / 2,
                        [post_rates[d] for d in drivers_ordered],
-                       width, label="Post-sync (YAML tests adopted)",
+                       width, label="Post-adoption (YAML tests adopted)",
                        color="#1f77b4", alpha=0.85)
 
     max_rate = max(list(pre_rates.values()) + list(post_rates.values()))
@@ -231,7 +231,7 @@ def chart_late5(panel_by_driver):
         fontsize=9)
     ax.set_ylabel("CRUD nonconformance bugs / year")
     ax.set_title("CRUD bug rate/year before vs. after YAML test adoption\n"
-                 "Five late-syncing drivers; pre-sync window starts at spec publication (Feb 2015)")
+                 "Five late-adopting drivers; pre-adoption window starts at spec publication (Feb 2015)")
     ax.legend()
     ax.grid(True, alpha=0.3, axis="y")
     plt.tight_layout()
