@@ -1,0 +1,177 @@
+{
+  "RUST": {
+    "repo_dir": "RUST.git",
+    "test_path_patterns": ["/test/", "test.rs", "_test.rs"],
+    "test_extensions": [".rs"],
+    "commits": [
+      {
+        "sha": "f8378e55",
+        "title": "RUST-485 Unified test runner (#249)",
+        "role": "runner_creation",
+        "note": "Creates the UTF runner; this is the investment, not savings"
+      },
+      {
+        "sha": "e74b942d",
+        "title": "RUST-749 Convert CRUD tests to unified format (#410)",
+        "role": "conversion"
+      },
+      {
+        "sha": "7079121d",
+        "title": "DRIVERS-1713 Convert change stream spec tests to the unified format (#570)",
+        "role": "conversion"
+      },
+      {
+        "sha": "bf12ff89",
+        "title": "RUST-1186 Convert sessions tests to unified test format (#583)",
+        "role": "conversion"
+      },
+      {
+        "sha": "5dcbbabb",
+        "title": "RUST-1334 Use unified format command monitoring tests (#667)",
+        "role": "conversion"
+      },
+      {
+        "sha": "5000d323",
+        "title": "RUST-1505 3.0 command event API (also deleted orphaned command-monitoring runner files)",
+        "role": "conversion",
+        "note": "Primary subject is API refactor; incidentally deleted command_monitoring/event.rs (93L) and operation.rs (297L) that 5dcbbabb had left in place"
+      },
+      {
+        "sha": "91a91e2f",
+        "title": "RUST-1859 Sync bulk write spec tests (actually deleted entire crud_v1 runner)",
+        "role": "conversion",
+        "note": "Misleading title; bulk of change is deleting 14-file crud_v1 runner (1379L) + retryable_writes legacy runner (199L)"
+      },
+      {
+        "sha": "152f5bc0",
+        "title": "RUST-817 Convert transactions tests to unified format (#1084)",
+        "role": "conversion"
+      },
+      {
+        "sha": "e6e18279",
+        "title": "RUST-1867 Convert retryable reads legacy tests to unified (#1139)",
+        "role": "conversion"
+      },
+      {
+        "sha": "a6d629fd",
+        "title": "RUST-1879 Convert read/write concern operation tests to unified test format (#1168)",
+        "role": "conversion"
+      },
+      {
+        "sha": "b821bb80",
+        "title": "RUST-2069 Convert retryable writes construction tests to spec tests (#1234)",
+        "role": "conversion"
+      },
+      {
+        "sha": "7b0c2bc5",
+        "title": "RUST-2077 Convert all CSFLE tests to unified format (#1491)",
+        "role": "conversion"
+      }
+    ]
+  },
+  "JAVA": {
+    "repo_dir": "JAVA.git",
+    "test_path_patterns": ["/src/test/", "/src/it/"],
+    "test_extensions": [".java", ".scala"],
+    "commits": [
+      {
+        "sha": "fa758caace",
+        "title": "Implement standard unified test runner (#603)",
+        "role": "runner_creation",
+        "note": "Creates the UTF runner (2005L added); the investment"
+      },
+      {
+        "sha": "a655ae1439",
+        "title": "Remove legacy GridFS test runner",
+        "role": "conversion"
+      },
+      {
+        "sha": "91cc64c3b9",
+        "title": "Remove legacy GridFS test runner for Scala driver",
+        "role": "conversion"
+      },
+      {
+        "sha": "9b7b1dbec9",
+        "title": "Convert remaining sessions spec tests to unified format",
+        "role": "conversion"
+      },
+      {
+        "sha": "f281a281fb",
+        "title": "Convert change stream spec tests to unified test format",
+        "role": "conversion"
+      },
+      {
+        "sha": "9fcdefd48f",
+        "title": "Migrate command monitoring tests to unified test runner",
+        "role": "conversion"
+      },
+      {
+        "sha": "4949548f1d",
+        "title": "Replace existing SDAM integration spec tests with unified tests (#989)",
+        "role": "conversion",
+        "note": "Net investment: added 677, deleted only 194 (new SDAM unified tests are more comprehensive)"
+      },
+      {
+        "sha": "d85982def5",
+        "title": "Port transactions spec tests to unified format (#1310)",
+        "role": "conversion"
+      },
+      {
+        "sha": "03746fae5a",
+        "title": "Convert legacy retryable writes tests to unified format (#1322)",
+        "role": "conversion"
+      },
+      {
+        "sha": "d143d90a1e",
+        "title": "Converted legacy CRUD tests to unified format (#1328)",
+        "role": "conversion"
+      },
+      {
+        "sha": "e68d303755",
+        "title": "Delete unused test class (TargetDocument)",
+        "role": "conversion"
+      },
+      {
+        "sha": "262c785be6",
+        "title": "Delete unused test class (JsonPoweredTestHelper)",
+        "role": "conversion"
+      },
+      {
+        "sha": "ddd5c5b4f3",
+        "title": "Convert legacy data lake tests to unified (#1332)",
+        "role": "conversion"
+      },
+      {
+        "sha": "4127a229f3",
+        "title": "Convert legacy write concern operation tests to unified format (#1347)",
+        "role": "conversion"
+      },
+      {
+        "sha": "4a44a001db",
+        "title": "Convert legacy retryable reads tests to unified format (#1330)",
+        "role": "conversion"
+      },
+      {
+        "sha": "722d9839da",
+        "title": "Migrate com.mongodb.client.unified.UnifiedTest to JUnit 5 (#1410)",
+        "role": "runner_evolution",
+        "note": "JUnit 4->5 migration of the runner itself; deleted 691L, added 433L"
+      },
+      {
+        "sha": "6dd96da75c",
+        "title": "Remove Legacy based ClientSideEncryptionTests (#1799)",
+        "role": "conversion"
+      },
+      {
+        "sha": "cefd9f1008",
+        "title": "Remove unused JsonPoweredCrudTestHelper (#1838)",
+        "role": "conversion"
+      },
+      {
+        "sha": "22154136e6",
+        "title": "Remove unused OperationContextBinding test wrappers (#1903)",
+        "role": "conversion"
+      }
+    ]
+  }
+}
