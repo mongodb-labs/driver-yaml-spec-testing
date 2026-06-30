@@ -17,17 +17,13 @@ CSV_PATH = BASE / "utf_migration" / "results.csv"
 OUT = BASE / "utf_migration" / "utf_driver_code_changes.pdf"
 
 LABELS = {
-    "CDRIVER": "C",
     "CSHARP":  "C#",
-    "CXX":     "C++",
     "GODRIVER": "Go",
     "JAVA":    "Java",
     "NODE":    "Node.js",
     "PHPLIB":  "PHP",
     "PYTHON":  "Python",
-    "RUBY":    "Ruby",
     "RUST":    "Rust",
-    "SWIFT":   "Swift",
 }
 
 
