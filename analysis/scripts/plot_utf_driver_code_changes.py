@@ -55,13 +55,15 @@ def main():
     ax.yaxis.grid(True, linestyle="--", color="gray", alpha=0.6, zorder=0)
     ax.set_axisbelow(True)
 
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
+    for spine in ax.spines.values():
+        spine.set_visible(True)
+        spine.set_color("black")
+        spine.set_linewidth(1.5)
 
-    ax.set_xlabel("Driver", fontsize=16, labelpad=8)
-    ax.set_ylabel("Net Lines of Code Changed", fontsize=14, labelpad=8)
-    ax.tick_params(axis="x", labelsize=13)
-    ax.tick_params(axis="y", labelsize=13)
+    ax.set_xlabel("Driver", fontsize=24, labelpad=8)
+    ax.set_ylabel("Net Lines of Code Changed", fontsize=24, labelpad=8)
+    ax.tick_params(axis="x", labelsize=16)
+    ax.tick_params(axis="y", labelsize=16)
     plt.xticks(rotation=30, ha="right")
 
     plt.tight_layout()
