@@ -44,6 +44,7 @@ def main():
 
     plt.rcParams.update({
         "font.family": "serif",
+        "font.serif": ["Times New Roman"],
         "pdf.fonttype": 42,
     })
 
