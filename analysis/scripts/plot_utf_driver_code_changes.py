@@ -62,8 +62,8 @@ def main():
 
     ax.set_xlabel("Driver", fontsize=24, labelpad=8)
     ax.set_ylabel("Net Lines of Code Changed", fontsize=24, labelpad=8)
-    ax.tick_params(axis="x", labelsize=20)
-    ax.tick_params(axis="y", labelsize=20)
+    ax.tick_params(axis="x", labelsize=24)
+    ax.tick_params(axis="y", labelsize=24)
     plt.xticks(rotation=30, ha="right")
 
     plt.tight_layout()
