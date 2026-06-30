@@ -50,7 +50,8 @@ def main():
 
     fig, ax = plt.subplots(figsize=(8, 6))
 
-    ax.bar(labels, values, color="#2ca02c", width=0.6, zorder=3)
+    ax.bar(labels, values, color="#2ca02c", width=0.6, zorder=3,
+           edgecolor="black", linewidth=0.8)
     ax.axhline(0, color="black", linewidth=0.8, zorder=4)
     ax.yaxis.grid(True, linestyle="--", color="gray", alpha=0.6, zorder=0)
     ax.set_axisbelow(True)
@@ -60,10 +61,10 @@ def main():
         spine.set_color("black")
         spine.set_linewidth(1.5)
 
-    ax.set_xlabel("Driver", fontsize=24, labelpad=8)
-    ax.set_ylabel("Net Lines of Code Changed", fontsize=24, labelpad=8)
-    ax.tick_params(axis="x", labelsize=24)
-    ax.tick_params(axis="y", labelsize=24)
+    ax.set_xlabel("Driver", fontsize=26, labelpad=8)
+    ax.set_ylabel("Net Lines of Code Changed", fontsize=26, labelpad=8)
+    ax.tick_params(axis="x", labelsize=26)
+    ax.tick_params(axis="y", labelsize=26)
     plt.xticks(rotation=30, ha="right")
 
     plt.tight_layout()
