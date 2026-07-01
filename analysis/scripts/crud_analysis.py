@@ -234,12 +234,13 @@ def chart_late5(panel_by_driver):
         fontsize=24)
     ax.set_xlabel("CRUD nonconformance bugs / year", fontsize=24)
     ax.tick_params(axis="x", labelsize=24)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18),
-              ncol=2, fontsize=20)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15),
+              ncol=1, fontsize=20)
     ax.grid(True, alpha=0.3, axis="x")
     plt.tight_layout()
-    plt.savefig(PLOT_DIR / "crud_late5.pdf", bbox_inches="tight")
-    plt.savefig(PLOT_DIR / "crud_late5.png", dpi=120, bbox_inches="tight")
+    plt.subplots_adjust(bottom=0.30)
+    plt.savefig(PLOT_DIR / "crud_late5.pdf")
+    plt.savefig(PLOT_DIR / "crud_late5.png", dpi=120)
     plt.close()
 
 
