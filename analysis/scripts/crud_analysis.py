@@ -205,6 +205,11 @@ def chart_late5(panel_by_driver):
     y = np.arange(len(drivers_ordered))
     height = 0.35
 
+    plt.rcParams.update({
+        "font.family": "serif",
+        "font.serif": ["Times New Roman"],
+        "pdf.fonttype": 42,
+    })
     fig, ax = plt.subplots(figsize=(9, 8))
     ax.barh(y + height / 2,
             [pre_rates[d] for d in drivers_ordered],
