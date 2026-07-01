@@ -199,41 +199,42 @@ def chart_late5(panel_by_driver):
         post_rates[d] = ob / om * 12 if om else 0
         pre_mo[d], post_mo[d] = pm, om
 
-    x = np.arange(len(drivers_ordered))
-    width = 0.35
+    # Reverse so earliest adopter (Node.js) is at top
+    drivers_ordered = list(reversed(drivers_ordered))
 
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.bar(x - width / 2,
-           [pre_rates[d] for d in drivers_ordered],
-           width, label="Pre-adoption (spec published, no YAML tests)",
-           color="#d62728", alpha=0.85)
-    bars_post = ax.bar(x + width / 2,
-                       [post_rates[d] for d in drivers_ordered],
-                       width, label="Post-adoption (YAML tests adopted)",
-                       color="#1f77b4", alpha=0.85)
+    y = np.arange(len(drivers_ordered))
+    height = 0.35
+
+    fig, ax = plt.subplots(figsize=(6, 3.5))
+    ax.barh(y + height / 2,
+            [pre_rates[d] for d in drivers_ordered],
+            height, label="Pre-adoption (no YAML tests)",
+            color="#d62728", alpha=0.85)
+    bars_post = ax.barh(y - height / 2,
+                        [post_rates[d] for d in drivers_ordered],
+                        height, label="Post-adoption (YAML tests)",
+                        color="#1f77b4", alpha=0.85)
 
     max_rate = max(list(pre_rates.values()) + list(post_rates.values()))
-    ax.set_ylim(0, max_rate * 1.35)
+    ax.set_xlim(0, max_rate * 1.6)
 
-    for xi, d in zip(x, drivers_ordered):
+    for yi, d in zip(y, drivers_ordered):
         v = pre_rates[d]
-        ax.text(xi - width / 2, v + max_rate * 0.01,
-                f"{v:.1f}\n({pre_mo[d]}mo)", ha="center", va="bottom", fontsize=8)
+        ax.text(v + max_rate * 0.03, yi + height / 2,
+                f"{v:.1f} ({pre_mo[d]}mo)", va="center", fontsize=8)
     for bar, d in zip(bars_post, drivers_ordered):
         v = post_rates[d]
         chg = (v - pre_rates[d]) / pre_rates[d] * 100 if pre_rates[d] else 0
-        ax.text(bar.get_x() + bar.get_width() / 2, v + max_rate * 0.01,
-                f"{v:.1f}\n({chg:+.0f}%)", ha="center", va="bottom", fontsize=8)
+        ax.text(v + max_rate * 0.03, bar.get_y() + bar.get_height() / 2,
+                f"{v:.1f} ({chg:+.0f}%)", va="center", fontsize=8)
 
-    ax.set_xticks(x)
-    ax.set_xticklabels(
-        [f"{LATE_LABELS[d]}\n(adopted {sync_dates[d]})" for d in drivers_ordered],
+    ax.set_yticks(y)
+    ax.set_yticklabels(
+        [f"{LATE_LABELS[d]} ({sync_dates[d]})" for d in drivers_ordered],
         fontsize=9)
-    ax.set_ylabel("CRUD nonconformance bugs / year")
-    ax.set_title("CRUD bug rate/year before vs. after YAML test adoption\n"
-                 "Five late-adopting drivers; pre-adoption window starts at spec publication (Feb 2015)")
-    ax.legend()
-    ax.grid(True, alpha=0.3, axis="y")
+    ax.set_xlabel("CRUD nonconformance bugs / year")
+    ax.legend(loc="lower right", fontsize=8)
+    ax.grid(True, alpha=0.3, axis="x")
     plt.tight_layout()
     plt.savefig(PLOT_DIR / "crud_late5.pdf")
     plt.savefig(PLOT_DIR / "crud_late5.png", dpi=120)
