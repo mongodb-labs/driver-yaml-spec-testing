@@ -205,7 +205,7 @@ def chart_late5(panel_by_driver):
     y = np.arange(len(drivers_ordered))
     height = 0.35
 
-    fig, ax = plt.subplots(figsize=(9, 7))
+    fig, ax = plt.subplots(figsize=(9, 8))
     ax.barh(y + height / 2,
             [pre_rates[d] for d in drivers_ordered],
             height, label="Pre-adoption (no YAML tests)",
@@ -221,12 +221,12 @@ def chart_late5(panel_by_driver):
     for yi, d in zip(y, drivers_ordered):
         v = pre_rates[d]
         ax.text(v + max_rate * 0.03, yi + height / 2,
-                f"{v:.1f} ({pre_mo[d]}mo)", va="center", fontsize=16)
+                f"{v:.1f} ({pre_mo[d]}mo)", va="center", fontsize=20)
     for bar, d in zip(bars_post, drivers_ordered):
         v = post_rates[d]
         chg = (v - pre_rates[d]) / pre_rates[d] * 100 if pre_rates[d] else 0
         ax.text(v + max_rate * 0.03, bar.get_y() + bar.get_height() / 2,
-                f"{v:.1f} ({chg:+.0f}%)", va="center", fontsize=16)
+                f"{v:.1f} ({chg:+.0f}%)", va="center", fontsize=20)
 
     ax.set_yticks(y)
     ax.set_yticklabels(
@@ -234,11 +234,12 @@ def chart_late5(panel_by_driver):
         fontsize=24)
     ax.set_xlabel("CRUD nonconformance bugs / year", fontsize=24)
     ax.tick_params(axis="x", labelsize=24)
-    ax.legend(loc="lower right", fontsize=16)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18),
+              ncol=2, fontsize=20)
     ax.grid(True, alpha=0.3, axis="x")
     plt.tight_layout()
-    plt.savefig(PLOT_DIR / "crud_late5.pdf")
-    plt.savefig(PLOT_DIR / "crud_late5.png", dpi=120)
+    plt.savefig(PLOT_DIR / "crud_late5.pdf", bbox_inches="tight")
+    plt.savefig(PLOT_DIR / "crud_late5.png", dpi=120, bbox_inches="tight")
     plt.close()
 
 
